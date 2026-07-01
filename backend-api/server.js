@@ -97,43 +97,6 @@ function persistEmployees(nextEmployees) {
   saveEmployees(employees);
 }
 
-function createApp() {
-  const app = express();
-  app.use(express.json());
-
-  const authMiddleware = (req, res, next) => {
-  {
-    id: 1,
-    fullName: 'Ana Souza',
-    email: 'ana.souza@empresa.local',
-    role: 'Analista de RH',
-    department: 'Recursos Humanos',
-    status: 'Ativo',
-    hireDate: '2024-01-15',
-    manager: 'Carlos Mendes'
-  },
-  {
-    id: 2,
-    fullName: 'Bruno Lima',
-    email: 'bruno.lima@empresa.local',
-    role: 'Desenvolvedor Full Stack',
-    department: 'Tecnologia',
-    status: 'Ativo',
-    hireDate: '2023-08-03',
-    manager: 'Marina Alves'
-  },
-  {
-    id: 3,
-    fullName: 'Carla Nogueira',
-    email: 'carla.nogueira@empresa.local',
-    role: 'Coordenadora de Operações',
-    department: 'Operações',
-    status: 'Em análise',
-    hireDate: '2022-11-19',
-    manager: 'Eduardo Costa'
-  }
-];
-
 function createToken(payload) {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
@@ -148,8 +111,13 @@ function verifyToken(token) {
   const [header, body, signature] = parts;
   const expected = crypto.createHash('sha256').update(`${header}.${body}`).digest('hex');
   if (signature !== expected) return null;
-  return JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+  try {
+    return JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+  } catch (_) {
+    return null;
+  }
 }
+
 
 function createApp() {
   const app = express();
