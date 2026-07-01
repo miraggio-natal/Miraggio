@@ -10,18 +10,42 @@
       .card { max-width: 720px; margin: 0 auto; background: #111827; padding: 2rem; border-radius: 16px; }
       input, button { width: 100%; padding: 0.75rem; margin-top: 0.75rem; border-radius: 8px; border: 1px solid #334155; }
       button { background: #3b82f6; color: white; cursor: pointer; }
+      .message { margin-top: 1rem; padding: 0.75rem; border-radius: 8px; background: #1f2937; }
     </style>
   </head>
   <body>
     <div class="card">
       <h1>Portal Público de Cadastro</h1>
       <p>Cadastro simples via link/QR Code para colaboradores.</p>
-      <form>
-        <input type="text" placeholder="Nome completo" />
-        <input type="email" placeholder="E-mail corporativo" />
-        <input type="text" placeholder="Cargo" />
+      <form id="registerForm">
+        <input type="text" name="fullName" placeholder="Nome completo" required />
+        <input type="email" name="email" placeholder="E-mail corporativo" required />
+        <input type="text" name="role" placeholder="Cargo" />
+        <input type="text" name="department" placeholder="Departamento" />
         <button type="submit">Enviar cadastro</button>
       </form>
+      <div id="message" class="message" hidden></div>
     </div>
+    <script>
+      document.getElementById('registerForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = event.target;
+        const payload = Object.fromEntries(new FormData(form).entries());
+        const message = document.getElementById('message');
+
+        const response = await fetch('/api/public/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        message.hidden = false;
+        message.textContent = response.ok
+          ? `Cadastro recebido com sucesso para ${result.employee.fullName}.`
+          : result.error || 'Erro no cadastro';
+        form.reset();
+      });
+    </script>
   </body>
 </html>

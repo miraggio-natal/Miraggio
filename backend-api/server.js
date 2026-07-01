@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 
-const employees = [
+let employees = [
   {
     id: 1,
     fullName: 'Ana Souza',
@@ -56,6 +56,17 @@ function createApp() {
   const app = express();
   app.use(express.json());
 
+  const authMiddleware = (req, res, next) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const payload = verifyToken(token);
+    if (!payload) {
+      res.status(401).json({ error: 'Token inválido' });
+      return;
+    }
+    req.user = payload;
+    next();
+  };
+
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
@@ -82,17 +93,11 @@ function createApp() {
     res.status(401).json({ error: 'Código inválido' });
   });
 
-  app.get('/api/me', (req, res) => {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    const payload = verifyToken(token);
-    if (!payload) {
-      res.status(401).json({ error: 'Token inválido' });
-      return;
-    }
-    res.json({ email: payload.sub, role: payload.role, name: 'Administrador' });
+  app.get('/api/me', authMiddleware, (req, res) => {
+    res.json({ email: req.user.sub, role: req.user.role, name: 'Administrador' });
   });
 
-  app.get('/api/dashboard', (req, res) => {
+  app.get('/api/dashboard', authMiddleware, (req, res) => {
     res.json({
       totalEmployees: employees.length,
       activeEmployees: employees.filter((item) => item.status === 'Ativo').length,
@@ -101,7 +106,7 @@ function createApp() {
     });
   });
 
-  app.get('/api/employees', (req, res) => {
+  app.get('/api/employees', authMiddleware, (req, res) => {
     const query = (req.query.q || '').toLowerCase();
     const filtered = employees.filter((item) => {
       const haystack = `${item.fullName} ${item.department} ${item.role}`.toLowerCase();
@@ -110,7 +115,7 @@ function createApp() {
     res.json(filtered);
   });
 
-  app.get('/api/employees/:id', (req, res) => {
+  app.get('/api/employees/:id', authMiddleware, (req, res) => {
     const employee = employees.find((item) => item.id === Number(req.params.id));
     if (!employee) {
       res.status(404).json({ error: 'Colaborador não encontrado' });
@@ -119,13 +124,35 @@ function createApp() {
     res.json(employee);
   });
 
-  app.post('/api/employees', (req, res) => {
+  app.post('/api/employees', authMiddleware, (req, res) => {
     const employee = { id: employees.length + 1, ...req.body };
     employees.push(employee);
     res.status(201).json(employee);
   });
 
-  app.put('/api/employees/:id', (req, res) => {
+  app.post('/api/public/register', (req, res) => {
+    const { fullName, email, role, department } = req.body;
+    if (!fullName || !email) {
+      res.status(400).json({ error: 'Nome e e-mail são obrigatórios' });
+      return;
+    }
+
+    const employee = {
+      id: employees.length + 1,
+      fullName,
+      email,
+      role: role || 'Novo cadastro',
+      department: department || 'Não informado',
+      status: 'Em análise',
+      hireDate: new Date().toISOString().slice(0, 10),
+      manager: 'Em definição'
+    };
+
+    employees.push(employee);
+    res.status(201).json({ success: true, employee });
+  });
+
+  app.put('/api/employees/:id', authMiddleware, (req, res) => {
     const index = employees.findIndex((item) => item.id === Number(req.params.id));
     if (index < 0) {
       res.status(404).json({ error: 'Colaborador não encontrado' });
@@ -135,7 +162,7 @@ function createApp() {
     res.json(employees[index]);
   });
 
-  app.delete('/api/employees/:id', (req, res) => {
+  app.delete('/api/employees/:id', authMiddleware, (req, res) => {
     const index = employees.findIndex((item) => item.id === Number(req.params.id));
     if (index < 0) {
       res.status(404).json({ error: 'Colaborador não encontrado' });
@@ -145,7 +172,7 @@ function createApp() {
     res.status(204).end();
   });
 
-  app.get('/api/audit', (req, res) => {
+  app.get('/api/audit', authMiddleware, (req, res) => {
     res.json([
       { id: 1, action: 'Login', user: 'admin@empresa.local', at: '2026-07-01T08:30:00Z' },
       { id: 2, action: 'Cadastro de funcionário', user: 'admin@empresa.local', at: '2026-07-01T09:15:00Z' }

@@ -13,32 +13,96 @@
       table { width: 100%; border-collapse: collapse; }
       th, td { padding: 0.75rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
       .pill { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 999px; background: #dbeafe; color: #1d4ed8; }
+      .status { font-size: 0.9rem; }
     </style>
   </head>
   <body>
     <header>
       <h1>Gestão de Funcionários</h1>
-      <p>Dashboard inicial com dados simulados.</p>
+      <p>Painel conectado à API local.</p>
     </header>
     <main>
       <section class="grid">
-        <div class="card"><h3>Funcionários</h3><p>42</p></div>
-        <div class="card"><h3>Ativos</h3><p>39</p></div>
-        <div class="card"><h3>Em análise</h3><p>3</p></div>
+        <div class="card"><h3>Funcionários</h3><p id="totalEmployees">Carregando...</p></div>
+        <div class="card"><h3>Ativos</h3><p id="activeEmployees">Carregando...</p></div>
+        <div class="card"><h3>Em análise</h3><p id="pendingReview">Carregando...</p></div>
       </section>
+
+      <section class="card">
+        <h2>Novo cadastro</h2>
+        <form id="employeeForm">
+          <input type="text" name="fullName" placeholder="Nome completo" required />
+          <input type="email" name="email" placeholder="E-mail" required />
+          <input type="text" name="role" placeholder="Cargo" />
+          <input type="text" name="department" placeholder="Departamento" />
+          <button type="submit">Salvar</button>
+        </form>
+        <p id="formMessage" class="status"></p>
+      </section>
+
       <section class="card">
         <h2>Colaboradores recentes</h2>
+        <input type="search" id="searchInput" placeholder="Buscar por nome ou departamento" />
         <table>
           <thead>
             <tr><th>Nome</th><th>Departamento</th><th>Status</th></tr>
           </thead>
-          <tbody>
-            <tr><td>Ana Souza</td><td>RH</td><td><span class="pill">Ativo</span></td></tr>
-            <tr><td>Bruno Lima</td><td>Tecnologia</td><td><span class="pill">Ativo</span></td></tr>
-            <tr><td>Carla Nogueira</td><td>Operações</td><td><span class="pill">Em análise</span></td></tr>
-          </tbody>
+          <tbody id="employeeRows"></tbody>
         </table>
       </section>
     </main>
+    <script>
+      const token = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhZG1pbkBlbXByZXNhLmxvY2FsIiwicm9sZSI6ImFkbWluIn0.1f0f2b5c2c0e8e8b0a24a8d2d8d6b7cb';
+
+      async function api(path, options = {}) {
+        const response = await fetch(path, {
+          headers: { Authorization: `Bearer ${token}`, ...(options.body ? { 'Content-Type': 'application/json' } : {}) },
+          ...options
+        });
+        return response;
+      }
+
+      async function loadDashboard() {
+        const response = await api('/api/dashboard');
+        const data = await response.json();
+        document.getElementById('totalEmployees').textContent = data.totalEmployees;
+        document.getElementById('activeEmployees').textContent = data.activeEmployees;
+        document.getElementById('pendingReview').textContent = data.pendingReview;
+      }
+
+      async function loadEmployees(q = '') {
+        const response = await api(`/api/employees?q=${encodeURIComponent(q)}`);
+        const employees = await response.json();
+        const rows = document.getElementById('employeeRows');
+        rows.innerHTML = employees.map((employee) => `
+          <tr>
+            <td>${employee.fullName || employee.name || 'Sem nome'}</td>
+            <td>${employee.department || '—'}</td>
+            <td><span class="pill">${employee.status || 'Ativo'}</span></td>
+          </tr>
+        `).join('');
+      }
+
+      document.getElementById('employeeForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = event.target;
+        const payload = Object.fromEntries(new FormData(form).entries());
+        const message = document.getElementById('formMessage');
+        const response = await api('/api/employees', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        message.textContent = response.ok ? `Cadastro salvo para ${result.fullName || payload.fullName}` : result.error || 'Erro ao salvar';
+        form.reset();
+        loadDashboard();
+        loadEmployees();
+      });
+
+      document.getElementById('searchInput').addEventListener('input', (event) => loadEmployees(event.target.value));
+
+      loadDashboard();
+      loadEmployees();
+    </script>
   </body>
 </html>
