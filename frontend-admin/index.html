@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Administrativo</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
+      header { background: #0f172a; color: white; padding: 1rem 2rem; }
+      main { padding: 2rem; display: grid; gap: 1rem; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+      .card { background: white; padding: 1rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 0.75rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
+      .pill { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 999px; background: #dbeafe; color: #1d4ed8; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Gestão de Funcionários</h1>
+      <p>Dashboard inicial com dados simulados.</p>
+    </header>
+    <main>
+      <section class="grid">
+        <div class="card"><h3>Funcionários</h3><p>42</p></div>
+        <div class="card"><h3>Ativos</h3><p>39</p></div>
+        <div class="card"><h3>Em análise</h3><p>3</p></div>
+      </section>
+      <section class="card">
+        <h2>Colaboradores recentes</h2>
+        <table>
+          <thead>
+            <tr><th>Nome</th><th>Departamento</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Ana Souza</td><td>RH</td><td><span class="pill">Ativo</span></td></tr>
+            <tr><td>Bruno Lima</td><td>Tecnologia</td><td><span class="pill">Ativo</span></td></tr>
+            <tr><td>Carla Nogueira</td><td>Operações</td><td><span class="pill">Em análise</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </body>
+</html>
