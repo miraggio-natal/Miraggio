@@ -1,8 +1,107 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 
-let employees = [
+const dataFilePath = path.join(__dirname, 'data', 'employees.json');
+
+function loadEmployees() {
+  if (!fs.existsSync(dataFilePath)) {
+    return [
+      {
+        id: 1,
+        fullName: 'Ana Souza',
+        email: 'ana.souza@empresa.local',
+        role: 'Analista de RH',
+        department: 'Recursos Humanos',
+        status: 'Ativo',
+        hireDate: '2024-01-15',
+        manager: 'Carlos Mendes'
+      },
+      {
+        id: 2,
+        fullName: 'Bruno Lima',
+        email: 'bruno.lima@empresa.local',
+        role: 'Desenvolvedor Full Stack',
+        department: 'Tecnologia',
+        status: 'Ativo',
+        hireDate: '2023-08-03',
+        manager: 'Marina Alves'
+      },
+      {
+        id: 3,
+        fullName: 'Carla Nogueira',
+        email: 'carla.nogueira@empresa.local',
+        role: 'Coordenadora de Operações',
+        department: 'Operações',
+        status: 'Em análise',
+        hireDate: '2022-11-19',
+        manager: 'Eduardo Costa'
+      }
+    ];
+  }
+
+  try {
+    const raw = fs.readFileSync(dataFilePath, 'utf8');
+    return JSON.parse(raw);
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveEmployees(employees) {
+  fs.mkdirSync(path.dirname(dataFilePath), { recursive: true });
+  fs.writeFileSync(dataFilePath, JSON.stringify(employees, null, 2));
+}
+
+let employees = loadEmployees();
+
+if (!employees.length) {
+  employees = [
+    {
+      id: 1,
+      fullName: 'Ana Souza',
+      email: 'ana.souza@empresa.local',
+      role: 'Analista de RH',
+      department: 'Recursos Humanos',
+      status: 'Ativo',
+      hireDate: '2024-01-15',
+      manager: 'Carlos Mendes'
+    },
+    {
+      id: 2,
+      fullName: 'Bruno Lima',
+      email: 'bruno.lima@empresa.local',
+      role: 'Desenvolvedor Full Stack',
+      department: 'Tecnologia',
+      status: 'Ativo',
+      hireDate: '2023-08-03',
+      manager: 'Marina Alves'
+    },
+    {
+      id: 3,
+      fullName: 'Carla Nogueira',
+      email: 'carla.nogueira@empresa.local',
+      role: 'Coordenadora de Operações',
+      department: 'Operações',
+      status: 'Em análise',
+      hireDate: '2022-11-19',
+      manager: 'Eduardo Costa'
+    }
+  ];
+  saveEmployees(employees);
+}
+
+function persistEmployees(nextEmployees) {
+  employees = nextEmployees;
+  saveEmployees(employees);
+}
+
+function createApp() {
+  const app = express();
+  app.use(express.json());
+
+  const authMiddleware = (req, res, next) => {
   {
     id: 1,
     fullName: 'Ana Souza',
@@ -126,7 +225,8 @@ function createApp() {
 
   app.post('/api/employees', authMiddleware, (req, res) => {
     const employee = { id: employees.length + 1, ...req.body };
-    employees.push(employee);
+    const nextEmployees = [...employees, employee];
+    persistEmployees(nextEmployees);
     res.status(201).json(employee);
   });
 
@@ -148,7 +248,8 @@ function createApp() {
       manager: 'Em definição'
     };
 
-    employees.push(employee);
+    const nextEmployees = [...employees, employee];
+    persistEmployees(nextEmployees);
     res.status(201).json({ success: true, employee });
   });
 
@@ -158,8 +259,11 @@ function createApp() {
       res.status(404).json({ error: 'Colaborador não encontrado' });
       return;
     }
-    employees[index] = { ...employees[index], ...req.body };
-    res.json(employees[index]);
+    const updatedEmployee = { ...employees[index], ...req.body };
+    const nextEmployees = [...employees];
+    nextEmployees[index] = updatedEmployee;
+    persistEmployees(nextEmployees);
+    res.json(updatedEmployee);
   });
 
   app.delete('/api/employees/:id', authMiddleware, (req, res) => {
@@ -168,7 +272,8 @@ function createApp() {
       res.status(404).json({ error: 'Colaborador não encontrado' });
       return;
     }
-    employees.splice(index, 1);
+    const nextEmployees = employees.filter((_, itemIndex) => itemIndex !== index);
+    persistEmployees(nextEmployees);
     res.status(204).end();
   });
 
