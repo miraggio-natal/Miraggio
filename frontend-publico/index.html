@@ -1,545 +1,229 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Atualização Cadastral — Portal do Colaborador</title>
-
-<!--
-  ============================================================================
-  PORTAL PÚBLICO DE CADASTRO — PROTÓTIPO NAVEGÁVEL (Fase 4 do roadmap)
-
-  Acesso simulado por link exclusivo / QR Code. Fluxo completo em etapas:
-  dados pessoais → contato/endereço → bancário → dependentes/escolaridade →
-  documentos (upload) → revisão + aceite de veracidade + assinatura eletrônica
-  → confirmação com acompanhamento de status.
-
-  Os dados NÃO são enviados a lugar nenhum: é um protótipo de interface.
-  Pontos de integração com a API real (Fase 1/3) marcados como POST /api/portal/...
-  Arquivo único, sem build — abra no navegador.
-  ============================================================================
--->
-
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
-<style>
-  :root{
-    --ink:#131722; --paper:#eef1f4; --surface:#ffffff; --line:#e6e8ec; --line-strong:#d5d9e0;
-    --brand:#0e7c7b; --brand-deep:#0b615f; --brand-weak:#e6f2f1;
-    --ok:#15803d; --ok-weak:#e7f4ec; --warn:#b45309; --warn-weak:#fbf1e4; --danger:#b91c1c; --danger-weak:#fbeaea;
-    --txt:#1b2130; --txt-2:#5b6472; --txt-3:#8a93a2; --muted-weak:#eef1f5;
-    --radius:14px; --radius-sm:9px; --shadow:0 1px 2px rgba(19,23,34,.05),0 10px 34px rgba(19,23,34,.07);
-    --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    --display:"Space Grotesk","Segoe UI",system-ui,sans-serif;
-    --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{font-family:var(--sans);color:var(--txt);background:var(--paper);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased;}
-  h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.015em;margin:0;color:var(--ink);}
-  button{font-family:inherit;cursor:pointer;border:none;background:none;}
-  .mono{font-family:var(--mono);}
-
-  .shell{max-width:720px;margin:0 auto;padding:0 18px 60px;}
-  .topbar{max-width:720px;margin:0 auto;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;}
-  .brandmark{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:15px;color:var(--ink);}
-  .brandmark .glyph{width:32px;height:32px;border-radius:9px;background:var(--brand);display:grid;place-items:center;color:#fff;font-size:15px;box-shadow:0 6px 16px rgba(14,124,123,.4);}
-  .secure{font-size:11.5px;color:var(--txt-2);display:flex;align-items:center;gap:6px;font-family:var(--mono);}
-
-  .btn{padding:12px 18px;border-radius:var(--radius-sm);background:var(--brand);color:#fff;font-weight:600;font-size:14.5px;transition:background .15s,transform .05s;}
-  .btn:hover{background:var(--brand-deep);} .btn:active{transform:translateY(1px);}
-  .btn:disabled{background:#c4ccd4;cursor:not-allowed;}
-  .btn.ghost{background:transparent;color:var(--txt-2);border:1px solid var(--line-strong);}
-  .btn.ghost:hover{background:#fff;color:var(--txt);border-color:var(--line-strong);}
-  .btn.block{width:100%;}
-
-  /* ===== LANDING ===== */
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
-  .landing{padding:38px 34px;text-align:center;animation:fade .4s ease;}
-  .landing .seal{width:66px;height:66px;border-radius:18px;background:var(--brand-weak);color:var(--brand);display:grid;place-items:center;font-size:30px;margin:0 auto 18px;}
-  .landing h1{font-size:26px;margin-bottom:8px;}
-  .landing p{color:var(--txt-2);max-width:44ch;margin:0 auto 8px;}
-  .landing .who{margin:22px auto 6px;background:#fbfcfd;border:1px solid var(--line);border-radius:12px;padding:16px;max-width:400px;text-align:left;display:flex;gap:14px;align-items:center;}
-  .landing .who .av{width:48px;height:48px;border-radius:12px;background:var(--brand);color:#fff;display:grid;place-items:center;font-family:var(--display);font-weight:600;font-size:18px;}
-  .landing .who b{display:block;font-size:15px;} .landing .who small{color:var(--txt-3);font-family:var(--mono);font-size:12px;}
-  .landing .actions{margin-top:24px;}
-  .landing .fineprint{font-size:11.5px;color:var(--txt-3);margin-top:16px;}
-  .val-scan{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--brand);font-weight:600;margin-top:6px;}
-  .spinner{width:14px;height:14px;border:2px solid var(--brand-weak);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite;}
-
-  /* ===== FORM WIZARD ===== */
-  .wizard{display:none;}
-  .wizard.on{display:block;animation:fade .35s ease;}
-  .stepper{display:flex;align-items:center;gap:0;margin:6px 0 20px;overflow-x:auto;padding-bottom:4px;}
-  .stepper .st{display:flex;align-items:center;gap:8px;flex:none;}
-  .stepper .st .dot{width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid var(--line-strong);color:var(--txt-3);display:grid;place-items:center;font-size:12px;font-weight:700;font-family:var(--display);transition:.2s;}
-  .stepper .st .lbl{font-size:12px;color:var(--txt-3);font-weight:600;white-space:nowrap;}
-  .stepper .st.active .dot{background:var(--brand);border-color:var(--brand);color:#fff;}
-  .stepper .st.active .lbl{color:var(--brand);}
-  .stepper .st.done .dot{background:var(--ok);border-color:var(--ok);color:#fff;}
-  .stepper .link{width:22px;height:2px;background:var(--line-strong);margin:0 6px;flex:none;}
-  .stepper .st.done + .link{background:var(--ok);}
-
-  .progress{height:5px;background:var(--line);border-radius:5px;overflow:hidden;margin-bottom:18px;}
-  .progress .fill{height:100%;background:var(--brand);width:16%;transition:width .35s cubic-bezier(.4,0,.2,1);border-radius:5px;}
-
-  .fstep{display:none;}
-  .fstep.on{display:block;animation:fade .3s ease;}
-  .fstep-head{padding:22px 26px 4px;}
-  .fstep-head .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--brand);font-weight:700;}
-  .fstep-head h2{font-size:20px;margin-top:6px;}
-  .fstep-head p{color:var(--txt-2);font-size:13.5px;margin:5px 0 0;}
-  .fstep-body{padding:18px 26px 8px;}
-
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;}
-  .grid .full{grid-column:1/-1;}
-  .grid .c3{grid-column:span 1;}
-  .fld{display:flex;flex-direction:column;}
-  .fld label{font-size:12.5px;font-weight:600;color:var(--txt-2);margin-bottom:6px;}
-  .fld label .req{color:var(--danger);}
-  .fld input,.fld select,.fld textarea{
-    padding:11px 13px;border:1px solid var(--line-strong);border-radius:var(--radius-sm);font-family:var(--sans);font-size:14px;color:var(--txt);background:#fff;transition:border-color .15s,box-shadow .15s;width:100%;
-  }
-  .fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-weak);}
-  .fld input[readonly]{background:#f4f6f8;color:var(--txt-2);cursor:not-allowed;}
-  .fld .hint{font-size:11.5px;color:var(--txt-3);margin-top:5px;}
-  .fld.invalid input,.fld.invalid select{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-weak);}
-  .fld .err{display:none;font-size:11.5px;color:var(--danger);margin-top:5px;}
-  .fld.invalid .err{display:block;}
-  select.selin{-webkit-appearance:none;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 12px center;padding-right:32px;}
-
-  .subhead{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--txt-3);font-weight:700;margin:22px 0 12px;padding-top:16px;border-top:1px solid var(--line);}
-
-  /* dependents repeater */
-  .rep-row{display:grid;grid-template-columns:1.4fr 1fr .9fr auto;gap:10px;align-items:end;margin-bottom:10px;}
-  .rep-row .del{width:40px;height:42px;border:1px solid var(--line-strong);border-radius:9px;color:var(--danger);display:grid;place-items:center;background:#fff;}
-  .rep-row .del:hover{background:var(--danger-weak);}
-  .add-row{font-size:13px;font-weight:600;color:var(--brand);border:1px dashed var(--line-strong);border-radius:9px;padding:9px 14px;background:#fff;width:100%;}
-  .add-row:hover{background:var(--brand-weak);border-color:var(--brand);}
-
-  /* uploads */
-  .drop{border:2px dashed var(--line-strong);border-radius:12px;padding:26px;text-align:center;color:var(--txt-2);transition:.15s;background:#fbfcfd;cursor:pointer;}
-  .drop.hot{border-color:var(--brand);background:var(--brand-weak);color:var(--brand);}
-  .drop .big{font-size:26px;}
-  .drop b{color:var(--brand);}
-  .filelist{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
-  .frow{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;animation:fade .25s ease;}
-  .frow .fi{width:34px;height:34px;border-radius:8px;background:var(--brand-weak);color:var(--brand);display:grid;place-items:center;flex:none;}
-  .frow .fn{flex:1;min-width:0;line-height:1.3;} .frow .fn b{font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .frow .fn small{color:var(--txt-3);font-size:11.5px;}
-  .frow .rm{color:var(--txt-3);width:30px;height:30px;border-radius:7px;display:grid;place-items:center;} .frow .rm:hover{background:var(--danger-weak);color:var(--danger);}
-  .checklist{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
-  .cl{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--txt-2);}
-  .cl .box{width:18px;height:18px;border-radius:5px;border:2px solid var(--line-strong);display:grid;place-items:center;font-size:11px;color:#fff;}
-  .cl.on .box{background:var(--ok);border-color:var(--ok);} .cl.on{color:var(--txt);}
-
-  /* review */
-  .rev-group{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;}
-  .rev-group .gh{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fbfcfd;border-bottom:1px solid var(--line);}
-  .rev-group .gh b{font-size:13.5px;} .rev-group .gh .edit{font-size:12px;color:var(--brand);font-weight:600;}
-  .rev-dl{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;}
-  .rev-dl .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--txt-3);font-weight:600;}
-  .rev-dl .v{font-size:13.5px;}
-
-  .accept{display:flex;gap:12px;align-items:flex-start;padding:16px;border:1px solid var(--line-strong);border-radius:12px;background:#fbfcfd;margin-top:6px;}
-  .accept input{margin-top:3px;width:18px;height:18px;accent-color:var(--brand);flex:none;}
-  .accept label{font-size:13px;color:var(--txt);}
-
-  .sign-wrap{margin-top:16px;}
-  .sign-pad{border:1px solid var(--line-strong);border-radius:12px;background:#fff;touch-action:none;width:100%;height:170px;display:block;cursor:crosshair;}
-  .sign-tools{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
-  .sign-tools small{color:var(--txt-3);font-size:12px;}
-  .sign-tools button{font-size:12.5px;color:var(--txt-2);font-weight:600;padding:6px 12px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;}
-  .sign-tools button:hover{background:var(--muted-weak);}
-
-  .foot{display:flex;justify-content:space-between;gap:12px;padding:18px 26px 24px;border-top:1px solid var(--line);margin-top:10px;}
-
-  /* success */
-  .done-screen{display:none;padding:40px 34px;text-align:center;animation:fade .4s ease;}
-  .done-screen.on{display:block;}
-  .done-screen .seal{width:76px;height:76px;border-radius:50%;background:var(--ok-weak);color:var(--ok);display:grid;place-items:center;font-size:38px;margin:0 auto 18px;}
-  .done-screen h1{font-size:25px;} .done-screen p{color:var(--txt-2);max-width:46ch;margin:8px auto 0;}
-  .proto{margin:18px auto;font-family:var(--mono);font-size:13px;background:var(--muted-weak);color:var(--txt-2);padding:8px 16px;border-radius:8px;display:inline-block;}
-  .track{display:flex;align-items:center;justify-content:center;gap:0;margin:24px 0 6px;}
-  .track .tk{display:flex;flex-direction:column;align-items:center;gap:7px;flex:none;width:96px;}
-  .track .tk .d{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:13px;color:#fff;font-family:var(--display);font-weight:700;}
-  .track .tk small{font-size:11.5px;color:var(--txt-3);text-align:center;}
-  .track .tk.done .d{background:var(--ok);} .track .tk.done small{color:var(--txt);}
-  .track .tk.current .d{background:var(--brand);} .track .tk.current small{color:var(--brand);font-weight:700;}
-  .track .tk.todo .d{background:#cfd6de;}
-  .track .tline{width:44px;height:2px;background:var(--line-strong);margin-top:15px;}
-  .track .tline.done{background:var(--ok);}
-
-  .mock-banner{max-width:720px;margin:16px auto 0;padding:10px 16px;font-size:12px;color:var(--warn);background:var(--warn-weak);border:1px solid #f0dcc0;border-radius:10px;text-align:center;}
-
-  @keyframes fade{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  @media (max-width:560px){
-    .grid{grid-template-columns:1fr;}
-    .rep-row{grid-template-columns:1fr 1fr;}
-    .rep-row .del{grid-column:2;justify-self:end;}
-    .fstep-body,.fstep-head,.foot,.landing{padding-left:18px;padding-right:18px;}
-    .rev-dl{grid-template-columns:1fr;}
-  }
-  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enviar currículo · Portal de Carreiras</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root { --brand:#0e5c4a; --brand-dark:#0b4c3d; --ink:#1b1e24; --muted:#6b7280; }
+    body { background:#f7f8f7; color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+    .navbar-brand { font-weight:700; letter-spacing:-.02em; }
+    .text-brand { color:var(--brand); }
+    .btn-brand { background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; }
+    .btn-brand:hover { background:var(--brand-dark); border-color:var(--brand-dark); color:#fff; }
+    .form-card { border:none; border-radius:1rem; box-shadow:0 10px 30px rgba(0,0,0,.06); }
+    .form-label { font-size:.8rem; font-weight:600; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
+    .section-title { font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+    footer { color:var(--muted); font-size:.85rem; padding:2.5rem 0; }
+    .success-icon { width:64px; height:64px; border-radius:50%; background:#e2f1e8; color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto; }
+    .dropzone { border:2px dashed #cdd5d1; border-radius:.75rem; padding:1.25rem; text-align:center; color:var(--muted); background:#fbfdfc; }
+    .dropzone .fname { color:var(--brand); font-weight:600; }
+  </style>
 </head>
 <body>
+  <nav class="navbar navbar-expand-lg bg-white border-bottom">
+    <div class="container">
+      <a class="navbar-brand text-brand" href="index.html">Portal de Carreiras</a>
+      <a class="btn btn-outline-secondary btn-sm" href="index.html">Voltar</a>
+    </div>
+  </nav>
 
-<div class="topbar">
-  <div class="brandmark"><span class="glyph">◈</span> Portal do Colaborador</div>
-  <div class="secure">🔒 conexão segura</div>
-</div>
+  <main class="container py-5" style="max-width:820px;">
+    <div class="text-center mb-4">
+      <h1 class="h3 fw-bold">Envie seu currículo</h1>
+      <p class="text-muted">Preencha os campos abaixo. Os itens com * são obrigatórios.</p>
+    </div>
 
-<div class="shell">
-  <!-- ===================== LANDING ===================== -->
-  <div class="card landing" id="landing">
-    <div class="seal">◈</div>
-    <h1>Atualização cadastral</h1>
-    <p>Você recebeu um link exclusivo para revisar e completar seus dados. Leva cerca de 5 minutos.</p>
-    <div class="val-scan" id="valScan"><span class="spinner"></span> validando seu link de acesso…</div>
-    <div class="who" id="whoBox" style="display:none;">
-      <div class="av" id="whoAv">MS</div>
-      <div>
-        <b id="whoName">—</b>
-        <small id="whoMeta">—</small>
+    <div id="successBox" class="card form-card d-none">
+      <div class="card-body text-center py-5">
+        <div class="success-icon mb-3">&#10003;</div>
+        <h2 class="h4 fw-bold mb-2">Currículo enviado!</h2>
+        <p class="text-muted mb-4">Recebemos sua inscrição. Nossa equipe vai analisar seu perfil. Boa sorte!</p>
+        <button id="btnNovo" class="btn btn-brand">Enviar outro currículo</button>
       </div>
     </div>
-    <div class="actions" id="landingActions" style="display:none;">
-      <button class="btn block" onclick="startWizard()">Começar meu cadastro</button>
-      <div class="fineprint">Ao continuar, seus dados são tratados conforme a LGPD e ficam visíveis apenas para o RH.</div>
-    </div>
-  </div>
 
-  <!-- ===================== WIZARD ===================== -->
-  <div class="wizard" id="wizard">
-    <div class="stepper" id="stepper"></div>
-    <div class="progress"><div class="fill" id="progFill"></div></div>
-
-    <div class="card">
-      <!-- STEP 1 — Pessoais -->
-      <div class="fstep on" data-step="0">
-        <div class="fstep-head"><div class="eyebrow">Etapa 1 de 6</div><h2>Dados pessoais</h2><p>Confira o que o RH já preencheu e complete o que faltar.</p></div>
-        <div class="fstep-body">
-          <div class="grid">
-            <div class="fld full"><label>Nome completo <span class="req">*</span></label><input id="f_nome" value="Mariana Silveira Costa" data-req /><div class="err">Informe seu nome completo.</div></div>
-            <div class="fld"><label>Nome social</label><input id="f_social" placeholder="opcional" /></div>
-            <div class="fld"><label>CPF</label><input id="f_cpf" value="312.456.789-08" readonly /><div class="hint">Definido pelo RH — não editável.</div></div>
-            <div class="fld"><label>RG</label><input id="f_rg" value="" placeholder="00.000.000-0" /></div>
-            <div class="fld"><label>Órgão emissor / UF</label><input id="f_rgorg" placeholder="SSP/SP" /></div>
-            <div class="fld"><label>Data de nascimento <span class="req">*</span></label><input id="f_nasc" type="date" value="1992-04-18" data-req /><div class="err">Informe sua data de nascimento.</div></div>
-            <div class="fld"><label>Sexo</label>
-              <select class="selin" id="f_sexo"><option value="">Selecione</option><option>Feminino</option><option>Masculino</option><option>Outro</option><option>Prefiro não informar</option></select>
-            </div>
-            <div class="fld"><label>Estado civil</label>
-              <select class="selin" id="f_ec"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Viúvo(a)</option></select>
-            </div>
-            <div class="fld"><label>Tipo sanguíneo</label>
-              <select class="selin" id="f_sangue"><option value="">Selecione</option><option>A+</option><option>A−</option><option>B+</option><option>B−</option><option>AB+</option><option>AB−</option><option>O+</option><option>O−</option></select>
-            </div>
-            <div class="fld"><label>Nome da mãe</label><input id="f_mae" /></div>
-            <div class="fld"><label>Nome do pai</label><input id="f_pai" /></div>
+    <div id="formCard" class="card form-card">
+      <div class="card-body p-4 p-md-5">
+        <form id="curriculoForm">
+          <p class="section-title mb-3">Dados pessoais</p>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6"><label for="nome" class="form-label">Nome completo *</label><input type="text" class="form-control" id="nome" required /></div>
+            <div class="col-12 col-md-6"><label for="email" class="form-label">E-mail *</label><input type="email" class="form-control" id="email" required /></div>
+            <div class="col-12 col-md-6"><label for="telefone" class="form-label">Telefone</label><input type="text" class="form-control" id="telefone" placeholder="(11) 90000-0000" /></div>
           </div>
-        </div>
-      </div>
 
-      <!-- STEP 2 — Contato / Endereço -->
-      <div class="fstep" data-step="1">
-        <div class="fstep-head"><div class="eyebrow">Etapa 2 de 6</div><h2>Contato e endereço</h2><p>Onde a empresa pode falar com você.</p></div>
-        <div class="fstep-body">
-          <div class="grid">
-            <div class="fld"><label>E-mail <span class="req">*</span></label><input id="f_email" type="email" value="mariana.costa@email.com" data-req /><div class="err">Informe um e-mail válido.</div></div>
-            <div class="fld"><label>Celular <span class="req">*</span></label><input id="f_cel" value="(11) 9 8123-4567" data-req /><div class="err">Informe um celular.</div></div>
+          <p class="section-title mb-3">Vaga de interesse</p>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6"><label for="cargo_pretendido" class="form-label">Cargo pretendido *</label><input type="text" class="form-control" id="cargo_pretendido" required /></div>
+            <div class="col-12 col-md-6"><label for="departamento_pretendido" class="form-label">Departamento</label>
+              <select class="form-select" id="departamento_pretendido">
+                <option value="">Selecione&#8230;</option>
+                <option>RH</option><option>TI</option><option>Financeiro</option>
+                <option>Marketing</option><option>Opera&#231;&#245;es</option>
+              </select></div>
+            <div class="col-6 col-md-4"><label for="experiencia_anos" class="form-label">Experiência (anos)</label><input type="number" class="form-control" id="experiencia_anos" min="0" value="0" /></div>
+            <div class="col-6 col-md-4"><label for="pretensao_salarial" class="form-label">Pretensão (R$)</label><input type="number" class="form-control" id="pretensao_salarial" min="0" step="0.01" /></div>
           </div>
-          <div class="subhead">Endereço</div>
-          <div class="grid">
-            <div class="fld c3"><label>CEP</label><input id="f_cep" value="01310-100" /></div>
-            <div class="fld" style="grid-column:span 1;"><label>UF</label>
-              <select class="selin" id="f_uf"><option value="">—</option><option>SP</option><option>RJ</option><option>MG</option><option>PR</option><option>RS</option><option>BA</option><option>SC</option><option>Outros</option></select>
+
+          <p class="section-title mb-3">Currículo</p>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6"><label for="formacao" class="form-label">Formação</label><input type="text" class="form-control" id="formacao" placeholder="Ex.: Sistemas de Informação" /></div>
+            <div class="col-12"><label for="habilidades" class="form-label">Habilidades (separe por vírgula)</label><input type="text" class="form-control" id="habilidades" placeholder="Python, SQL, Comunica&#231;&#227;o" /></div>
+
+            <div class="col-12">
+              <label class="form-label">Arquivo do currículo (PDF, até 5 MB)</label>
+              <label for="curriculo_arquivo" class="dropzone d-block" style="cursor:pointer;">
+                <div id="dropText">&#128206; Toque para selecionar o PDF do seu currículo</div>
+                <div id="fileName" class="fname mt-1"></div>
+              </label>
+              <input type="file" id="curriculo_arquivo" accept="application/pdf,.pdf" class="d-none" />
             </div>
-            <div class="fld full"><label>Logradouro</label><input id="f_log" value="Av. Paulista" /></div>
-            <div class="fld"><label>Número</label><input id="f_num" value="1000" /></div>
-            <div class="fld"><label>Complemento</label><input id="f_comp" placeholder="apto, bloco…" /></div>
-            <div class="fld"><label>Bairro</label><input id="f_bairro" value="Bela Vista" /></div>
-            <div class="fld"><label>Cidade</label><input id="f_cidade" value="São Paulo" /></div>
+
+            <div class="col-12"><label for="curriculo_url" class="form-label">Ou link do currículo (opcional)</label><input type="url" class="form-control" id="curriculo_url" placeholder="https://... (LinkedIn, Drive, etc.)" /></div>
+            <div class="col-12"><label for="resumo_profissional" class="form-label">Resumo profissional</label><textarea class="form-control" id="resumo_profissional" rows="4" placeholder="Conte um pouco sobre sua experiência e objetivos."></textarea></div>
           </div>
-        </div>
-      </div>
 
-      <!-- STEP 3 — Bancário -->
-      <div class="fstep" data-step="2">
-        <div class="fstep-head"><div class="eyebrow">Etapa 3 de 6</div><h2>Dados bancários</h2><p>Conta para crédito de salário e a chave PIX, se preferir.</p></div>
-        <div class="fstep-body">
-          <div class="grid">
-            <div class="fld full"><label>Banco</label>
-              <select class="selin" id="f_banco"><option value="">Selecione o banco</option><option>001 — Banco do Brasil</option><option>104 — Caixa Econômica</option><option>237 — Bradesco</option><option>341 — Itaú</option><option>033 — Santander</option><option>260 — Nubank</option><option>077 — Inter</option></select>
-            </div>
-            <div class="fld"><label>Agência</label><input id="f_ag" placeholder="0000" /></div>
-            <div class="fld"><label>Conta</label><input id="f_conta" placeholder="00000-0" /></div>
-            <div class="fld"><label>Tipo de conta</label>
-              <select class="selin" id="f_tipoconta"><option>Corrente</option><option>Poupança</option><option>Salário</option></select>
-            </div>
-            <div class="fld"><label>Chave PIX</label><input id="f_pix" placeholder="CPF, e-mail, telefone ou aleatória" /></div>
+          <div id="formMessage" class="mb-3"></div>
+
+          <div class="d-grid d-md-flex gap-2">
+            <button type="submit" id="btnEnviar" class="btn btn-brand btn-lg">Enviar currículo</button>
+            <a href="index.html" class="btn btn-light btn-lg">Cancelar</a>
           </div>
-        </div>
-      </div>
-
-      <!-- STEP 4 — Dependentes / Escolaridade -->
-      <div class="fstep" data-step="3">
-        <div class="fstep-head"><div class="eyebrow">Etapa 4 de 6</div><h2>Dependentes e escolaridade</h2><p>Inclua dependentes (se houver) e sua formação.</p></div>
-        <div class="fstep-body">
-          <div class="subhead" style="margin-top:0;border-top:none;padding-top:0;">Dependentes</div>
-          <div id="depList"></div>
-          <button class="add-row" onclick="addDep()">+ Adicionar dependente</button>
-
-          <div class="subhead">Escolaridade</div>
-          <div class="grid">
-            <div class="fld"><label>Nível</label>
-              <select class="selin" id="f_nivel"><option value="">Selecione</option><option>Ensino médio</option><option>Técnico</option><option>Superior</option><option>Pós-graduação</option><option>Mestrado</option><option>Doutorado</option></select>
-            </div>
-            <div class="fld"><label>Situação</label>
-              <select class="selin" id="f_escstatus"><option>Completo</option><option>Cursando</option><option>Incompleto</option></select>
-            </div>
-            <div class="fld"><label>Curso</label><input id="f_curso" placeholder="ex.: Administração" /></div>
-            <div class="fld"><label>Instituição</label><input id="f_inst" placeholder="ex.: USP" /></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- STEP 5 — Documentos -->
-      <div class="fstep" data-step="4">
-        <div class="fstep-head"><div class="eyebrow">Etapa 5 de 6</div><h2>Documentos</h2><p>Anexe seus documentos. Aceita PDF, imagem, Word, Excel ou ZIP (até 10 MB cada).</p></div>
-        <div class="fstep-body">
-          <div class="drop" id="drop" onclick="document.getElementById('fileInput').click()">
-            <div class="big">⬆</div>
-            <div>Arraste os arquivos aqui ou <b>clique para selecionar</b></div>
-          </div>
-          <input id="fileInput" type="file" multiple style="display:none" onchange="handleFiles(this.files)" />
-          <div class="filelist" id="fileList"></div>
-          <div class="checklist" id="checklist"></div>
-        </div>
-      </div>
-
-      <!-- STEP 6 — Revisão + Assinatura -->
-      <div class="fstep" data-step="5">
-        <div class="fstep-head"><div class="eyebrow">Etapa 6 de 6</div><h2>Revisão e assinatura</h2><p>Confira os dados, confirme a veracidade e assine para enviar.</p></div>
-        <div class="fstep-body">
-          <div id="reviewArea"></div>
-
-          <div class="subhead">Declaração e assinatura</div>
-          <div class="accept">
-            <input type="checkbox" id="veracity" onchange="updateSubmit()" />
-            <label for="veracity">Declaro que as informações fornecidas são verdadeiras e estão completas, e autorizo o tratamento dos meus dados pelo RH conforme a LGPD.</label>
-          </div>
-          <div class="sign-wrap">
-            <canvas class="sign-pad" id="signPad"></canvas>
-            <div class="sign-tools">
-              <small id="signHint">Assine no quadro acima (mouse ou toque).</small>
-              <button onclick="clearSign()">Limpar assinatura</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- FOOTER NAV -->
-      <div class="foot">
-        <button class="btn ghost" id="btnBack" onclick="prevStep()" style="visibility:hidden;">‹ Voltar</button>
-        <button class="btn" id="btnNext" onclick="nextStep()">Continuar ›</button>
+        </form>
       </div>
     </div>
-  </div>
+  </main>
 
-  <!-- ===================== SUCCESS ===================== -->
-  <div class="card done-screen" id="done">
-    <div class="seal">✓</div>
-    <h1>Cadastro enviado!</h1>
-    <p>Seus dados foram enviados para análise do RH. Você pode acompanhar o andamento por este mesmo link.</p>
-    <div class="proto" id="protoCode">Protocolo: —</div>
-    <div class="track">
-      <div class="tk done"><div class="d">✓</div><small>Enviado</small></div>
-      <div class="tline done"></div>
-      <div class="tk current"><div class="d">2</div><small>Em análise</small></div>
-      <div class="tline"></div>
-      <div class="tk todo"><div class="d">3</div><small>Aprovado</small></div>
-    </div>
-    <p style="font-size:12.5px;color:var(--txt-3);margin-top:20px;">Em caso de pendência, o RH entra em contato pelo e-mail informado.</p>
-  </div>
-</div>
+  <footer><div class="container text-center">&#169; Portal de Carreiras</div></footer>
 
-<div class="mock-banner">Protótipo de interface — os dados não são enviados. Integração real (upload, aceite e assinatura): Fases 1 e 3 do roadmap.</div>
+  <script>
+  // ===================================================================
+  // URL da API (porta 8000 do Codespace) — já preenchida
+  // ===================================================================
+  const API_BASE = "https://fluffy-dollop-qvvv9qj554gxfx7vg-8000.app.github.dev";
+  const TIMEOUT = 15000;
+  const MAX_MB = 5;
 
-<script>
-/* ============================================================================
-   Portal público — protótipo. Estado em memória; nada é enviado.
-   Integração real: GET /api/portal/:token (valida link) e
-   POST /api/portal/:token/submit (dados + documentos + assinatura).
-   ============================================================================ */
-const initials=(n)=>n.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+  const $ = (id) => document.getElementById(id);
 
-const STEPS=["Pessoais","Contato","Bancário","Família","Documentos","Revisão"];
-let current=0;
-const files=[]; // {name,size}
-let depCount=0;
-
-/* ----- LANDING: simula validação do token do link/QR ----- */
-window.addEventListener("load",()=>{
-  // GET /api/portal/:token  → devolve o "stub" criado pelo RH
-  setTimeout(()=>{
-    const stub={nome:"Mariana Silveira Costa",matricula:"F-0384",empresa:"Matriz — São Paulo"};
-    valScan.style.display="none";
-    whoAv.textContent=initials(stub.nome);
-    whoName.textContent=stub.nome;
-    whoMeta.textContent=`${stub.matricula} · ${stub.empresa}`;
-    whoBox.style.display="flex";
-    landingActions.style.display="block";
-  },1100);
-  buildStepper(); renderChecklist(); addDep(); initSignPad();
-});
-
-function startWizard(){
-  landing.style.display="none";
-  wizard.classList.add("on");
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-
-/* ----- STEPPER ----- */
-function buildStepper(){
-  stepper.innerHTML=STEPS.map((s,i)=>`
-    ${i>0?'<span class="link"></span>':''}
-    <div class="st ${i===0?'active':''}" data-i="${i}">
-      <span class="dot">${i+1}</span><span class="lbl">${s}</span>
-    </div>`).join("");
-}
-function refreshStepper(){
-  document.querySelectorAll(".stepper .st").forEach((el,i)=>{
-    el.classList.toggle("active",i===current);
-    el.classList.toggle("done",i<current);
-    const dot=el.querySelector(".dot");
-    dot.textContent = i<current ? "✓" : (i+1);
+  $("curriculo_arquivo").addEventListener("change", () => {
+    const f = $("curriculo_arquivo").files[0];
+    $("fileName").textContent = f ? f.name : "";
+    $("dropText").textContent = f ? "\u{1F4CE} Arquivo selecionado:" : "\u{1F4CE} Toque para selecionar o PDF do seu curr\u00EDculo";
   });
-  progFill.style.width=((current+1)/STEPS.length*100)+"%";
-}
 
-/* ----- NAV ----- */
-function showStep(n){
-  document.querySelectorAll(".fstep").forEach(s=>s.classList.toggle("on",+s.dataset.step===n));
-  current=n;
-  btnBack.style.visibility = n===0 ? "hidden":"visible";
-  if(n===STEPS.length-1){ btnNext.textContent="Enviar cadastro"; buildReview(); updateSubmit(); }
-  else { btnNext.textContent="Continuar ›"; btnNext.disabled=false; }
-  refreshStepper();
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-function validateStep(n){
-  const stepEl=document.querySelector(`.fstep[data-step="${n}"]`);
-  let ok=true;
-  stepEl.querySelectorAll("[data-req]").forEach(inp=>{
-    const fld=inp.closest(".fld");
-    if(!inp.value.trim()){ fld.classList.add("invalid"); ok=false; }
-    else fld.classList.remove("invalid");
+  function coletar() {
+    const num = (id) => { const v = $(id).value; return v === "" ? null : Number(v); };
+    const txt = (id) => { const v = $(id).value.trim(); return v === "" ? null : v; };
+    return {
+      nome: $("nome").value.trim(),
+      email: $("email").value.trim(),
+      telefone: txt("telefone"),
+      cargo_pretendido: $("cargo_pretendido").value.trim(),
+      departamento_pretendido: $("departamento_pretendido").value || null,
+      experiencia_anos: num("experiencia_anos") ?? 0,
+      pretensao_salarial: num("pretensao_salarial"),
+      formacao: txt("formacao"),
+      habilidades: txt("habilidades"),
+      curriculo_url: txt("curriculo_url"),
+      resumo_profissional: txt("resumo_profissional"),
+    };
+  }
+
+  function comTimeout(ms) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    return { signal: ctrl.signal, done: () => clearTimeout(t) };
+  }
+
+  async function criarCandidato(dados) {
+    const c = comTimeout(TIMEOUT);
+    try {
+      const resp = await fetch(API_BASE + "/candidatos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados),
+        signal: c.signal,
+      });
+      c.done();
+      if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail || ("Erro HTTP " + resp.status)); }
+      return await resp.json();
+    } catch (e) { c.done(); throw e; }
+  }
+
+  async function enviarArquivo(candidatoId, arquivo) {
+    const c = comTimeout(TIMEOUT);
+    try {
+      const fd = new FormData();
+      fd.append("arquivo", arquivo);
+      const resp = await fetch(API_BASE + "/candidatos/" + candidatoId + "/curriculo", {
+        method: "POST", body: fd, signal: c.signal,
+      });
+      c.done();
+      if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail || ("Erro HTTP " + resp.status)); }
+      return await resp.json();
+    } catch (e) { c.done(); throw e; }
+  }
+
+  const msg = (html) => $("formMessage").innerHTML = html;
+
+  $("curriculoForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const dados = coletar();
+    if (!dados.nome || !dados.email || !dados.cargo_pretendido) {
+      msg('<div class="alert alert-danger py-2 mb-0">Preencha nome, e-mail e cargo pretendido.</div>');
+      return;
+    }
+
+    const arquivo = $("curriculo_arquivo").files[0] || null;
+    if (arquivo) {
+      const ehPdf = arquivo.type === "application/pdf" || arquivo.name.toLowerCase().endsWith(".pdf");
+      if (!ehPdf) { msg('<div class="alert alert-danger py-2 mb-0">O arquivo precisa ser um PDF.</div>'); return; }
+      if (arquivo.size > MAX_MB * 1024 * 1024) { msg('<div class="alert alert-danger py-2 mb-0">O PDF excede ' + MAX_MB + ' MB.</div>'); return; }
+    }
+
+    const btn = $("btnEnviar");
+    btn.disabled = true; btn.textContent = "Enviando\u2026"; msg("");
+
+    try {
+      const candidato = await criarCandidato(dados);
+      if (arquivo && candidato && candidato.id) {
+        try {
+          await enviarArquivo(candidato.id, arquivo);
+        } catch (upErr) {
+          $("formCard").classList.add("d-none");
+          $("successBox").classList.remove("d-none");
+          $("successBox").querySelector("p").textContent =
+            "Sua inscri\u00E7\u00E3o foi registrada, mas n\u00E3o conseguimos anexar o PDF. Voc\u00EA pode reenviar mais tarde ou usar o campo de link.";
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+      }
+      $("formCard").classList.add("d-none");
+      $("successBox").classList.remove("d-none");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      const texto = String(err.message || "");
+      if (texto.toLowerCase().includes("mail")) {
+        msg('<div class="alert alert-warning py-2 mb-0">Este e-mail j\u00E1 foi cadastrado antes. Para atualizar seus dados, fale com a empresa.</div>');
+      } else {
+        msg('<div class="alert alert-danger py-2 mb-0">N\u00E3o foi poss\u00EDvel enviar agora. Verifique sua conex\u00E3o e tente novamente.</div>');
+      }
+    } finally {
+      btn.disabled = false; btn.textContent = "Enviar curr\u00EDculo";
+    }
   });
-  return ok;
-}
-function nextStep(){
-  if(current===STEPS.length-1){ submitForm(); return; }
-  if(!validateStep(current)) return;
-  showStep(current+1);
-}
-function prevStep(){ if(current>0) showStep(current-1); }
-// limpa erro ao digitar
-document.addEventListener("input",e=>{ const f=e.target.closest?.(".fld.invalid"); if(f&&e.target.value.trim()) f.classList.remove("invalid"); });
 
-/* ----- DEPENDENTES (repeater) ----- */
-function addDep(){
-  const id=depCount++;
-  const row=document.createElement("div");
-  row.className="rep-row"; row.dataset.dep=id;
-  row.innerHTML=`
-    <div class="fld"><label>Nome</label><input placeholder="Nome do dependente" class="dep-nome"/></div>
-    <div class="fld"><label>Parentesco</label>
-      <select class="selin dep-par"><option value="">—</option><option>Filho(a)</option><option>Cônjuge</option><option>Pai/Mãe</option><option>Outro</option></select></div>
-    <div class="fld"><label>Nascimento</label><input type="date" class="dep-nasc"/></div>
-    <button class="del" title="Remover" onclick="this.parentElement.remove()">✕</button>`;
-  depList.appendChild(row);
-}
-
-/* ----- UPLOADS ----- */
-const drop=document.getElementById("drop");
-["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("hot");}));
-["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("hot");}));
-drop.addEventListener("drop",e=>handleFiles(e.dataTransfer.files));
-function fmtSize(b){ return b<1024?b+" B":b<1048576?(b/1024).toFixed(0)+" KB":(b/1048576).toFixed(1)+" MB"; }
-function handleFiles(list){
-  [...list].forEach(f=>files.push({name:f.name,size:f.size}));
-  renderFiles(); renderChecklist();
-}
-function renderFiles(){
-  if(!files.length){ fileList.innerHTML=""; return; }
-  fileList.innerHTML=files.map((f,i)=>`
-    <div class="frow">
-      <span class="fi">▤</span>
-      <div class="fn"><b>${f.name}</b><small>${fmtSize(f.size)} · pronto para envio</small></div>
-      <button class="rm" title="Remover" onclick="removeFile(${i})">✕</button>
-    </div>`).join("");
-}
-function removeFile(i){ files.splice(i,1); renderFiles(); renderChecklist(); }
-const REQUIRED_DOCS=["RG ou CNH","CPF","Comprovante de residência","Foto 3x4"];
-function renderChecklist(){
-  const done=Math.min(files.length,REQUIRED_DOCS.length);
-  checklist.innerHTML=`<div style="font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--txt-3);font-weight:700;margin-bottom:4px;">Documentos sugeridos</div>`+
-  REQUIRED_DOCS.map((d,i)=>`<div class="cl ${i<done?'on':''}"><span class="box">${i<done?'✓':''}</span>${d}</div>`).join("");
-}
-
-/* ----- REVIEW ----- */
-const val=(id)=>{ const el=document.getElementById(id); return (el&&el.value.trim())||"—"; };
-function buildReview(){
-  const deps=[...document.querySelectorAll("#depList .rep-row")].filter(r=>r.querySelector(".dep-nome").value.trim());
-  const groups=[
-    {t:"Dados pessoais",step:0,items:[["Nome",val("f_nome")],["Nome social",val("f_social")],["CPF",val("f_cpf")],["Nascimento",val("f_nasc")],["Sexo",val("f_sexo")],["Estado civil",val("f_ec")]]},
-    {t:"Contato e endereço",step:1,items:[["E-mail",val("f_email")],["Celular",val("f_cel")],["Endereço",`${val("f_log")}, ${val("f_num")}`],["Cidade/UF",`${val("f_cidade")} / ${val("f_uf")}`],["CEP",val("f_cep")]]},
-    {t:"Dados bancários",step:2,items:[["Banco",val("f_banco")],["Agência",val("f_ag")],["Conta",`${val("f_conta")} (${val("f_tipoconta")})`],["Chave PIX",val("f_pix")]]},
-    {t:"Família e escolaridade",step:3,items:[["Dependentes",deps.length?`${deps.length} cadastrado(s)`:"Nenhum"],["Escolaridade",`${val("f_nivel")} — ${val("f_escstatus")}`],["Curso",val("f_curso")]]},
-    {t:"Documentos",step:4,items:[["Arquivos anexados",files.length?`${files.length} arquivo(s)`:"Nenhum"]]}
-  ];
-  reviewArea.innerHTML=groups.map(g=>`
-    <div class="rev-group">
-      <div class="gh"><b>${g.t}</b><button class="edit" onclick="showStep(${g.step})">Editar</button></div>
-      <div class="rev-dl">${g.items.map(([k,v])=>`<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>
-    </div>`).join("");
-}
-
-/* ----- SUBMIT gating ----- */
-function hasSignature(){ return signDrawn; }
-function updateSubmit(){
-  const ok=document.getElementById("veracity").checked && hasSignature();
-  btnNext.disabled=!ok;
-  signHint.textContent = signDrawn ? "Assinatura registrada ✓" : "Assine no quadro acima (mouse ou toque).";
-  signHint.style.color = signDrawn ? "var(--ok)" : "var(--txt-3)";
-}
-function submitForm(){
-  // POST /api/portal/:token/submit  { dados, arquivos, assinatura(dataURL), aceite:true, ip, geo, timestamp }
-  wizard.classList.remove("on");
-  document.getElementById("done").classList.add("on");
-  const proto="RH-"+new Date().getFullYear()+"-"+Math.floor(100000+Math.random()*899999);
-  document.getElementById("protoCode").textContent="Protocolo: "+proto;
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-
-/* ----- SIGNATURE PAD ----- */
-let signDrawn=false, ctx, drawing=false;
-function initSignPad(){
-  const c=document.getElementById("signPad");
-  const resize=()=>{ const r=c.getBoundingClientRect(); c.width=r.width; c.height=r.height; ctx=c.getContext("2d"); ctx.lineWidth=2.2; ctx.lineCap="round"; ctx.strokeStyle="#131722"; };
-  resize(); window.addEventListener("resize",resize);
-  const pos=e=>{ const r=c.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; };
-  const start=e=>{ drawing=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); };
-  const move=e=>{ if(!drawing)return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); if(!signDrawn){signDrawn=true;updateSubmit();} e.preventDefault(); };
-  const end=()=>{ drawing=false; };
-  c.addEventListener("mousedown",start); c.addEventListener("mousemove",move); window.addEventListener("mouseup",end);
-  c.addEventListener("touchstart",start,{passive:false}); c.addEventListener("touchmove",move,{passive:false}); c.addEventListener("touchend",end);
-}
-function clearSign(){ const c=document.getElementById("signPad"); ctx.clearRect(0,0,c.width,c.height); signDrawn=false; updateSubmit(); }
-</script>
+  $("btnNovo").addEventListener("click", () => {
+    $("curriculoForm").reset();
+    $("experiencia_anos").value = "0";
+    $("fileName").textContent = "";
+    $("dropText").textContent = "\u{1F4CE} Toque para selecionar o PDF do seu curr\u00EDculo";
+    $("successBox").classList.add("d-none");
+    $("formCard").classList.remove("d-none");
+  });
+  </script>
 </body>
 </html>

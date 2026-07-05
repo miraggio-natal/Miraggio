@@ -1,108 +1,562 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Painel Administrativo</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
-      header { background: #0f172a; color: white; padding: 1rem 2rem; }
-      main { padding: 2rem; display: grid; gap: 1rem; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
-      .card { background: white; padding: 1rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { padding: 0.75rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
-      .pill { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 999px; background: #dbeafe; color: #1d4ed8; }
-      .status { font-size: 0.9rem; }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1>Gestão de Funcionários</h1>
-      <p>Painel conectado à API local.</p>
-    </header>
-    <main>
-      <section class="grid">
-        <div class="card"><h3>Funcionários</h3><p id="totalEmployees">Carregando...</p></div>
-        <div class="card"><h3>Ativos</h3><p id="activeEmployees">Carregando...</p></div>
-        <div class="card"><h3>Em análise</h3><p id="pendingReview">Carregando...</p></div>
-      </section>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Administrativo · Seleção &amp; Funcionários</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root { --brand:#0e5c4a; --brand-dark:#0b4c3d; --ink:#1b1e24; --muted:#6b7280; }
+    body { background:#f1f3f5; color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+    .app-header { background:var(--ink); color:#fff; padding:1rem 0; }
+    .app-header .brand { font-weight:700; letter-spacing:-0.02em; }
+    .app-header .brand small { color:#9aa0ac; font-weight:400; letter-spacing:0.04em; text-transform:uppercase; }
+    #connBadge { font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding:.25rem .6rem; border-radius:999px; }
+    #connBadge.online { background:rgba(255,255,255,.1); color:#8fe3c3; }
+    #connBadge.offline { background:#4a2c12; color:#f0b454; }
+    .stat-card { border:none; border-radius:.75rem; box-shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.06); }
+    .stat-card .stat-label { font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; }
+    .stat-card .stat-value { font-size:2rem; font-weight:700; line-height:1.1; }
+    .stat-card .accent { width:3px; border-radius:3px; align-self:stretch; }
+    .card-panel { border:none; border-radius:.75rem; box-shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.06); }
+    .card-panel .card-header { background:#fff; border-bottom:1px solid #e9ecef; font-weight:600; }
+    .btn-brand { background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; }
+    .btn-brand:hover { background:var(--brand-dark); border-color:var(--brand-dark); color:#fff; }
+    .form-label { font-size:.8rem; font-weight:600; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
+    .table thead th { font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; white-space:nowrap; }
+    .table tbody td { vertical-align:middle; }
+    .cand-name { font-weight:600; }
+    .cand-email { color:var(--muted); font-size:.8rem; }
+    .nav-tabs .nav-link { color:var(--muted); font-weight:600; border:none; border-bottom:2px solid transparent; }
+    .nav-tabs .nav-link.active { color:var(--ink); background:none; border-bottom-color:var(--brand); }
+    .badge-status { font-size:.72rem; font-weight:600; padding:.3rem .6rem; border-radius:999px; }
+    .badge-status.ativo { color:#157f4c; background:#e2f1e8; }
+    .badge-status.inativo { color:#b23b3b; background:#f7e7e7; }
+    .fase-sel { font-size:.75rem; padding:.2rem .4rem; max-width:130px; }
+    .score { display:flex; align-items:center; gap:8px; min-width:90px; }
+    .score .bar { flex:1; height:6px; background:#edf0f2; border-radius:999px; overflow:hidden; }
+    .score .bar > i { display:block; height:100%; background:#b9822b; }
+    .score .val { font-weight:700; font-size:.8rem; width:26px; text-align:right; }
+    .empty-state { color:var(--muted); text-align:center; padding:2.5rem 1rem; }
+    footer.app-footer { color:var(--muted); font-size:.85rem; padding:2rem 0; }
+    #toasts { position:fixed; right:16px; bottom:16px; z-index:1080; display:flex; flex-direction:column; gap:8px; }
+    .toast-msg { background:var(--ink); color:#fff; padding:.6rem .9rem; border-radius:.5rem; font-size:.85rem; box-shadow:0 8px 24px rgba(0,0,0,.2); max-width:300px; }
+    .toast-msg.ok { background:var(--brand); }
+    .toast-msg.err { background:#b23b3b; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="container d-flex align-items-center justify-content-between">
+      <div class="brand fs-4"><small class="fs-6">Painel administrativo</small></div>
+      <span id="connBadge" class="online">Conectado</span>
+    </div>
+  </header>
 
-      <section class="card">
-        <h2>Novo cadastro</h2>
-        <form id="employeeForm">
-          <input type="text" name="fullName" placeholder="Nome completo" required />
-          <input type="email" name="email" placeholder="E-mail" required />
-          <input type="text" name="role" placeholder="Cargo" />
-          <input type="text" name="department" placeholder="Departamento" />
-          <button type="submit">Salvar</button>
+  <main class="container py-4">
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-4">
+        <div class="stat-card card h-100"><div class="card-body d-flex gap-3">
+          <div class="accent" style="background:#0e5c4a;"></div>
+          <div><div class="stat-label">Total de funcionários</div><div class="stat-value" id="totalEmployees">0</div></div>
+        </div></div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="stat-card card h-100"><div class="card-body d-flex gap-3">
+          <div class="accent" style="background:#157f4c;"></div>
+          <div><div class="stat-label">Funcionários ativos</div><div class="stat-value" id="activeEmployees">0</div></div>
+        </div></div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="stat-card card h-100"><div class="card-body d-flex gap-3">
+          <div class="accent" style="background:#b9822b;"></div>
+          <div><div class="stat-label">Candidatos em análise</div><div class="stat-value" id="pendingReview">0</div></div>
+        </div></div>
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pane-candidatos" type="button" role="tab">Candidatos &amp; Currículos</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pane-funcionarios" type="button" role="tab">Funcionários</button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="pane-candidatos" role="tabpanel">
+        <div class="card card-panel">
+          <div class="card-header d-flex flex-column flex-sm-row gap-2 align-items-sm-center justify-content-between">
+            <span>Candidatos</span>
+            <div class="d-flex gap-2 align-items-center flex-grow-1 justify-content-sm-end">
+              <select class="form-select form-select-sm" id="candidateFilter" style="max-width:170px;">
+                <option value="">Todas as fases</option>
+                <option value="inscrito">Inscrito</option>
+                <option value="triagem">Triagem</option>
+                <option value="entrevista">Entrevista</option>
+                <option value="aprovado">Aprovado</option>
+                <option value="reprovado">Reprovado</option>
+                <option value="contratado">Contratado</option>
+              </select>
+              <div class="input-group input-group-sm" style="max-width:240px;">
+                <span class="input-group-text">Buscar</span>
+                <input type="text" class="form-control" id="candidateSearchInput" placeholder="Nome, e-mail ou cargo" />
+              </div>
+              <button type="button" class="btn btn-brand btn-sm text-nowrap" id="btnNovoCandidato" data-bs-toggle="modal" data-bs-target="#candidateModal">+ Novo candidato</button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead><tr>
+                  <th>Candidato</th><th>Cargo pretendido</th><th>Departamento</th><th>Exp.</th>
+                  <th>Pontuação</th><th>Currículo</th><th>Fase</th><th class="text-end">Ações</th>
+                </tr></thead>
+                <tbody id="candidateRows">
+                  <tr><td colspan="8"><div class="empty-state">Carregando&#8230;</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="pane-funcionarios" role="tabpanel">
+        <div class="card card-panel">
+          <div class="card-header d-flex flex-column flex-sm-row gap-2 align-items-sm-center justify-content-between">
+            <span>Funcionários</span>
+            <div class="d-flex gap-2 align-items-center flex-grow-1 justify-content-sm-end">
+              <div class="input-group input-group-sm" style="max-width:320px;">
+                <span class="input-group-text">Buscar</span>
+                <input type="text" class="form-control" id="searchInput" placeholder="Nome, cargo ou departamento" />
+              </div>
+              <button type="button" class="btn btn-brand btn-sm text-nowrap" id="btnNovoFuncionario" data-bs-toggle="modal" data-bs-target="#employeeModal">+ Novo funcionário</button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead><tr>
+                  <th>Nome</th><th>Cargo</th><th>Departamento</th><th>Salário</th><th>Situação</th><th class="text-end">Ações</th>
+                </tr></thead>
+                <tbody id="employeeRows">
+                  <tr><td colspan="6"><div class="empty-state">Carregando&#8230;</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal fade" id="candidateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="candidateModalLabel">Cadastro de candidato</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="candidateForm">
+          <input type="hidden" id="candId" />
+          <div class="modal-body">
+            <h6 class="text-uppercase text-muted small fw-bold mb-3">Dados do candidato</h6>
+            <div class="row g-3">
+              <div class="col-12 col-md-6"><label for="candFullName" class="form-label">Nome completo</label><input type="text" class="form-control" id="candFullName" required /></div>
+              <div class="col-12 col-md-6"><label for="candEmail" class="form-label">E-mail</label><input type="email" class="form-control" id="candEmail" required /></div>
+              <div class="col-12 col-md-6"><label for="candPhone" class="form-label">Telefone</label><input type="text" class="form-control" id="candPhone" /></div>
+              <div class="col-12 col-md-6"><label for="desiredRole" class="form-label">Cargo pretendido</label><input type="text" class="form-control" id="desiredRole" required /></div>
+              <div class="col-12 col-md-6"><label for="candDepartment" class="form-label">Departamento</label>
+                <select class="form-select" id="candDepartment">
+                  <option value="">Selecione&#8230;</option><option>RH</option><option>TI</option>
+                  <option>Financeiro</option><option>Marketing</option><option>Opera&#231;&#245;es</option>
+                </select></div>
+              <div class="col-6 col-md-3"><label for="candStatus" class="form-label">Fase</label>
+                <select class="form-select" id="candStatus">
+                  <option value="inscrito">Inscrito</option><option value="triagem">Triagem</option>
+                  <option value="entrevista">Entrevista</option><option value="aprovado">Aprovado</option>
+                  <option value="reprovado">Reprovado</option>
+                </select></div>
+              <div class="col-6 col-md-3"><label for="candScore" class="form-label">Pontuação</label><input type="number" class="form-control" id="candScore" min="0" max="100" value="0" /></div>
+            </div>
+            <hr class="my-4" />
+            <h6 class="text-uppercase text-muted small fw-bold mb-3">Currículo</h6>
+            <div class="row g-3">
+              <div class="col-6 col-md-3"><label for="experience" class="form-label">Experiência (anos)</label><input type="number" class="form-control" id="experience" min="0" value="0" /></div>
+              <div class="col-6 col-md-3"><label for="salaryExpectation" class="form-label">Pretensão (R$)</label><input type="number" class="form-control" id="salaryExpectation" min="0" step="0.01" /></div>
+              <div class="col-12 col-md-6"><label for="education" class="form-label">Formação</label><input type="text" class="form-control" id="education" /></div>
+              <div class="col-12"><label for="skills" class="form-label">Habilidades (separe por vírgula)</label><input type="text" class="form-control" id="skills" placeholder="Python, SQL, Docker" /></div>
+              <div class="col-12"><label for="resumeUrl" class="form-label">Link do currículo (URL)</label><input type="url" class="form-control" id="resumeUrl" placeholder="https://..." /></div>
+              <div class="col-12"><label for="summary" class="form-label">Resumo profissional</label><textarea class="form-control" id="summary" rows="3"></textarea></div>
+            </div>
+            <div id="candidateFormMessage" class="mt-3"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-brand">Salvar candidato</button>
+          </div>
         </form>
-        <p id="formMessage" class="status"></p>
-      </section>
+      </div>
+    </div>
+  </div>
 
-      <section class="card">
-        <h2>Colaboradores recentes</h2>
-        <input type="search" id="searchInput" placeholder="Buscar por nome ou departamento" />
-        <table>
-          <thead>
-            <tr><th>Nome</th><th>Departamento</th><th>Status</th></tr>
-          </thead>
-          <tbody id="employeeRows"></tbody>
-        </table>
-      </section>
-    </main>
-    <script>
-      const token = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhZG1pbkBlbXByZXNhLmxvY2FsIiwicm9sZSI6ImFkbWluIn0.1f0f2b5c2c0e8e8b0a24a8d2d8d6b7cb';
+  <div class="modal fade" id="employeeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="employeeModalLabel">Cadastrar funcionário</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="employeeForm">
+          <input type="hidden" id="empId" />
+          <div class="modal-body">
+            <div class="mb-3"><label for="fullName" class="form-label">Nome completo</label><input type="text" class="form-control" id="fullName" required /></div>
+            <div class="mb-3"><label for="employeeEmail" class="form-label">E-mail</label><input type="email" class="form-control" id="employeeEmail" required /></div>
+            <div class="mb-3"><label for="role" class="form-label">Cargo</label><input type="text" class="form-control" id="role" required /></div>
+            <div class="mb-3"><label for="department" class="form-label">Departamento</label>
+              <select class="form-select" id="department">
+                <option value="">Selecione&#8230;</option><option>RH</option><option>TI</option>
+                <option>Financeiro</option><option>Marketing</option><option>Opera&#231;&#245;es</option>
+              </select></div>
+            <div class="mb-3"><label for="salary" class="form-label">Salário</label>
+              <div class="input-group"><span class="input-group-text">R$</span><input type="number" class="form-control" id="salary" min="0" step="0.01" placeholder="0,00" /></div></div>
+            <div class="mb-1"><label for="status" class="form-label">Situação</label>
+              <select class="form-select" id="status"><option value="true">Ativo</option><option value="false">Inativo</option></select></div>
+            <div id="formMessage" class="mt-3"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-brand">Salvar funcionário</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
-      async function api(path, options = {}) {
-        const response = await fetch(path, {
-          headers: { Authorization: `Bearer ${token}`, ...(options.body ? { 'Content-Type': 'application/json' } : {}) },
-          ...options
-        });
-        return response;
-      }
+  <footer class="app-footer"><div class="container text-center">Painel Administrativo · Seleção &amp; Funcionários</div></footer>
+  <div id="toasts"></div>
 
-      async function loadDashboard() {
-        const response = await api('/api/dashboard');
-        const data = await response.json();
-        document.getElementById('totalEmployees').textContent = data.totalEmployees;
-        document.getElementById('activeEmployees').textContent = data.activeEmployees;
-        document.getElementById('pendingReview').textContent = data.pendingReview;
-      }
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  const API_BASE = "https://fluffy-dollop-qvvv9qj554gxfx7vg-8000.app.github.dev";
+  const TIMEOUT = 5000;
+  const FASES = ["inscrito","triagem","entrevista","aprovado","reprovado","contratado"];
+  const EM_ANALISE = ["inscrito","triagem","entrevista","aprovado"];
 
-      async function loadEmployees(q = '') {
-        const response = await api(`/api/employees?q=${encodeURIComponent(q)}`);
-        const employees = await response.json();
-        const rows = document.getElementById('employeeRows');
-        rows.innerHTML = employees.map((employee) => `
-          <tr>
-            <td>${employee.fullName || employee.name || 'Sem nome'}</td>
-            <td>${employee.department || '—'}</td>
-            <td><span class="pill">${employee.status || 'Ativo'}</span></td>
-          </tr>
-        `).join('');
-      }
+  let offline = false;
+  let ultimoFuncionarios = [];
+  let ultimoCandidatos = [];
 
-      document.getElementById('employeeForm').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const form = event.target;
-        const payload = Object.fromEntries(new FormData(form).entries());
-        const message = document.getElementById('formMessage');
-        const response = await api('/api/employees', {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        message.textContent = response.ok ? `Cadastro salvo para ${result.fullName || payload.fullName}` : result.error || 'Erro ao salvar';
-        form.reset();
-        loadDashboard();
-        loadEmployees();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => (s==null?"":String(s).replace(/[&<>"]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])));
+  const brl = (n) => (n==null?"\u2014":Number(n).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}));
+
+  function toast(msg, tipo="") {
+    const el = document.createElement("div");
+    el.className = "toast-msg " + tipo;
+    el.textContent = msg;
+    $("toasts").appendChild(el);
+    setTimeout(()=>el.remove(), 3200);
+  }
+  function marcarConexao() {
+    const b = $("connBadge");
+    b.className = offline ? "offline" : "online";
+    b.textContent = offline ? "Modo offline (dados locais)" : "Conectado";
+  }
+
+  async function apiFetch(caminho, opcoes={}) {
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), TIMEOUT);
+    try {
+      const resp = await fetch(API_BASE + caminho, {
+        ...opcoes, signal: ctrl.signal,
+        headers: { "Content-Type":"application/json", ...(opcoes.headers||{}) },
       });
+      clearTimeout(t);
+      if (!resp.ok) {
+        const err = await resp.json().catch(()=>({}));
+        throw new Error(err.detail || ("Erro HTTP " + resp.status));
+      }
+      offline = false;
+      return resp.status === 204 ? null : await resp.json();
+    } catch (e) { clearTimeout(t); throw e; }
+  }
 
-      document.getElementById('searchInput').addEventListener('input', (event) => loadEmployees(event.target.value));
+  const LS_FUNC = "func_offline", LS_CAND = "cand_offline";
+  const SEED_FUNC = [
+    { id:1, nome:"Ana Souza", email:"ana@empresa.com", cargo:"Analista", departamento:"RH", salario:4500, ativo:true },
+    { id:2, nome:"Bruno Lima", email:"bruno@empresa.com", cargo:"Desenvolvedor", departamento:"TI", salario:7200, ativo:true },
+    { id:3, nome:"Carla Dias", email:"carla@empresa.com", cargo:"Gerente", departamento:"Financeiro", salario:9800, ativo:false },
+  ];
+  const SEED_CAND = [
+    { id:101, nome:"Elisa Rocha", email:"elisa@mail.com", telefone:"(11) 91111-0002", cargo_pretendido:"Analista de RH", departamento_pretendido:"RH", experiencia_anos:5, pontuacao:90, curriculo_url:"", curriculo_arquivo:"", status:"aprovado" },
+    { id:102, nome:"Diego Alves", email:"diego@mail.com", telefone:"(11) 91111-0001", cargo_pretendido:"Desenvolvedor", departamento_pretendido:"TI", experiencia_anos:3, pontuacao:78, curriculo_url:"", curriculo_arquivo:"", status:"triagem" },
+    { id:103, nome:"Felipe Nunes", email:"felipe@mail.com", telefone:"(11) 91111-0003", cargo_pretendido:"Designer", departamento_pretendido:"Marketing", experiencia_anos:2, pontuacao:64, curriculo_url:"", curriculo_arquivo:"", status:"inscrito" },
+  ];
+  const lsGet = (k, seed) => { const s=localStorage.getItem(k); if(s) return JSON.parse(s); localStorage.setItem(k, JSON.stringify(seed)); return [...seed]; };
+  const lsSet = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
-      loadDashboard();
-      loadEmployees();
-    </script>
-  </body>
+  async function listarFuncionarios(busca="") {
+    try {
+      const q = busca ? ("?busca=" + encodeURIComponent(busca)) : "";
+      return await apiFetch("/funcionarios" + q);
+    } catch(e) {
+      offline = true;
+      let l = lsGet(LS_FUNC, SEED_FUNC);
+      if (busca) { const t=busca.toLowerCase(); l=l.filter(f=>[f.nome,f.cargo,f.departamento].some(v=>(v||"").toLowerCase().includes(t))); }
+      return l;
+    }
+  }
+  async function obterFuncionario(id) {
+    try { return await apiFetch("/funcionarios/"+id); }
+    catch(e){ offline=true; return lsGet(LS_FUNC,SEED_FUNC).find(f=>f.id===Number(id))||null; }
+  }
+  async function salvarFuncionario(id, dados) {
+    try {
+      if (id) return await apiFetch("/funcionarios/"+id, {method:"PUT", body:JSON.stringify(dados)});
+      return await apiFetch("/funcionarios", {method:"POST", body:JSON.stringify(dados)});
+    } catch(e) {
+      offline=true; const l=lsGet(LS_FUNC,SEED_FUNC);
+      if(id){ const i=l.findIndex(f=>f.id===Number(id)); if(i>=0){ l[i]={...l[i],...dados}; lsSet(LS_FUNC,l); return l[i]; } }
+      const novo={...dados, id:Date.now()}; l.push(novo); lsSet(LS_FUNC,l); return novo;
+    }
+  }
+  async function removerFuncionario(id) {
+    try { await apiFetch("/funcionarios/"+id, {method:"DELETE"}); return true; }
+    catch(e){ offline=true; lsSet(LS_FUNC, lsGet(LS_FUNC,SEED_FUNC).filter(f=>f.id!==Number(id))); return true; }
+  }
+
+  async function listarCandidatos(busca="", status="") {
+    try {
+      const p = new URLSearchParams();
+      if (busca) p.set("busca", busca);
+      if (status) p.set("status_selecao", status);
+      const qs = p.toString() ? ("?"+p.toString()) : "";
+      return await apiFetch("/candidatos" + qs);
+    } catch(e) {
+      offline = true;
+      let l = lsGet(LS_CAND, SEED_CAND);
+      if (status) l = l.filter(c=>c.status===status);
+      if (busca) { const t=busca.toLowerCase(); l=l.filter(c=>[c.nome,c.email,c.cargo_pretendido].some(v=>(v||"").toLowerCase().includes(t))); }
+      return l.sort((a,b)=>(b.pontuacao||0)-(a.pontuacao||0));
+    }
+  }
+  async function obterCandidato(id) {
+    try { return await apiFetch("/candidatos/"+id); }
+    catch(e){ offline=true; return lsGet(LS_CAND,SEED_CAND).find(c=>c.id===Number(id))||null; }
+  }
+  async function salvarCandidato(id, dados) {
+    try {
+      if (id) return await apiFetch("/candidatos/"+id, {method:"PUT", body:JSON.stringify(dados)});
+      return await apiFetch("/candidatos", {method:"POST", body:JSON.stringify(dados)});
+    } catch(e) {
+      offline=true; const l=lsGet(LS_CAND,SEED_CAND);
+      if(id){ const i=l.findIndex(c=>c.id===Number(id)); if(i>=0){ l[i]={...l[i],...dados}; lsSet(LS_CAND,l); return l[i]; } }
+      const novo={...dados, id:Date.now(), status:dados.status||"inscrito"}; l.push(novo); lsSet(LS_CAND,l); return novo;
+    }
+  }
+  async function mudarFaseCandidato(id, novaFase) {
+    try { return await apiFetch("/candidatos/"+id+"/status", {method:"PATCH", body:JSON.stringify({novo_status:novaFase})}); }
+    catch(e){ offline=true; const l=lsGet(LS_CAND,SEED_CAND); const i=l.findIndex(c=>c.id===Number(id)); if(i>=0){ l[i].status=novaFase; lsSet(LS_CAND,l);} return null; }
+  }
+  async function contratarCandidato(id) {
+    try { return await apiFetch("/candidatos/"+id+"/contratar", {method:"POST", body:JSON.stringify({})}); }
+    catch(e){
+      offline=true; const l=lsGet(LS_CAND,SEED_CAND); const i=l.findIndex(c=>c.id===Number(id));
+      if(i>=0){ const c=l[i]; c.status="contratado"; lsSet(LS_CAND,l);
+        const f=lsGet(LS_FUNC,SEED_FUNC); f.push({id:Date.now(), nome:c.nome, email:c.email, cargo:c.cargo_pretendido, departamento:c.departamento_pretendido, salario:c.pretensao_salarial||0, ativo:true}); lsSet(LS_FUNC,f);
+      }
+      return {origem:"offline"};
+    }
+  }
+  async function removerCandidato(id) {
+    try { await apiFetch("/candidatos/"+id, {method:"DELETE"}); return true; }
+    catch(e){ offline=true; lsSet(LS_CAND, lsGet(LS_CAND,SEED_CAND).filter(c=>c.id!==Number(id))); return true; }
+  }
+
+  function atualizarIndicadores() {
+    $("totalEmployees").textContent = ultimoFuncionarios.length;
+    $("activeEmployees").textContent = ultimoFuncionarios.filter(f=>f.ativo).length;
+    $("pendingReview").textContent = ultimoCandidatos.filter(c=>EM_ANALISE.includes(c.status)).length;
+  }
+
+  function faseSelectHtml(c) {
+    const travado = c.status==="contratado" ? "disabled" : "";
+    const opts = FASES.map(f=>`<option value="${f}" ${f===c.status?"selected":""}>${f}</option>`).join("");
+    return `<select class="form-select form-select-sm fase-sel" data-fase="${c.id}" ${travado}>${opts}</select>`;
+  }
+
+  async function carregarCandidatos() {
+    const lista = await listarCandidatos($("candidateSearchInput").value.trim(), $("candidateFilter").value);
+    ultimoCandidatos = lista;
+    marcarConexao(); atualizarIndicadores();
+    const tb = $("candidateRows");
+    if (!lista.length) { tb.innerHTML = `<tr><td colspan="8"><div class="empty-state">Nenhum candidato encontrado.</div></td></tr>`; return; }
+    tb.innerHTML = lista.map(c=>{
+      const cv = c.curriculo_arquivo
+        ? `<a href="${API_BASE}/candidatos/${c.id}/curriculo" target="_blank" rel="noopener">PDF</a>`
+        : (c.curriculo_url ? `<a href="${esc(c.curriculo_url)}" target="_blank" rel="noopener">Link</a>` : "\u2014");
+      const podeContratar = c.status!=="contratado";
+      return `<tr>
+        <td><div class="cand-name">${esc(c.nome)}</div><div class="cand-email">${esc(c.email)}</div></td>
+        <td>${esc(c.cargo_pretendido)}</td>
+        <td>${esc(c.departamento_pretendido)||"\u2014"}</td>
+        <td>${c.experiencia_anos??0}a</td>
+        <td><div class="score"><div class="bar"><i style="width:${Math.min(100,c.pontuacao||0)}%"></i></div><span class="val">${c.pontuacao??0}</span></div></td>
+        <td>${cv}</td>
+        <td>${faseSelectHtml(c)}</td>
+        <td class="text-end text-nowrap">
+          <button class="btn btn-brand btn-sm" data-acao="contratar" data-id="${c.id}" ${podeContratar?"":"disabled"}>Contratar</button>
+          <button class="btn btn-outline-secondary btn-sm" data-acao="editar-cand" data-id="${c.id}">Editar</button>
+          <button class="btn btn-outline-danger btn-sm" data-acao="excluir-cand" data-id="${c.id}">Excluir</button>
+        </td></tr>`;
+    }).join("");
+  }
+
+  async function carregarFuncionarios() {
+    const lista = await listarFuncionarios($("searchInput").value.trim());
+    ultimoFuncionarios = lista;
+    marcarConexao(); atualizarIndicadores();
+    const tb = $("employeeRows");
+    if (!lista.length) { tb.innerHTML = `<tr><td colspan="6"><div class="empty-state">Nenhum funcionário encontrado.</div></td></tr>`; return; }
+    tb.innerHTML = lista.map(f=>`
+      <tr>
+        <td class="fw-semibold">${esc(f.nome)}</td>
+        <td>${esc(f.cargo)}</td>
+        <td>${esc(f.departamento)||"\u2014"}</td>
+        <td>${brl(f.salario)}</td>
+        <td><span class="badge-status ${f.ativo?"ativo":"inativo"}">${f.ativo?"Ativo":"Inativo"}</span></td>
+        <td class="text-end text-nowrap">
+          <button class="btn btn-outline-secondary btn-sm" data-acao="editar-func" data-id="${f.id}">Editar</button>
+          <button class="btn btn-outline-danger btn-sm" data-acao="excluir-func" data-id="${f.id}">Excluir</button>
+        </td></tr>`).join("");
+  }
+
+  const modalCand = () => bootstrap.Modal.getOrCreateInstance($("candidateModal"));
+  const modalFunc = () => bootstrap.Modal.getOrCreateInstance($("employeeModal"));
+
+  function limparCandForm() {
+    $("candId").value=""; $("candFullName").value=""; $("candEmail").value=""; $("candPhone").value="";
+    $("desiredRole").value=""; $("candDepartment").value=""; $("candStatus").value="inscrito"; $("candScore").value="0";
+    $("experience").value="0"; $("salaryExpectation").value=""; $("education").value=""; $("skills").value="";
+    $("resumeUrl").value=""; $("summary").value=""; $("candidateFormMessage").innerHTML="";
+    $("candidateModalLabel").textContent="Cadastro de candidato";
+  }
+  function preencherCandForm(c) {
+    $("candId").value=c.id; $("candFullName").value=c.nome||""; $("candEmail").value=c.email||"";
+    $("candPhone").value=c.telefone||""; $("desiredRole").value=c.cargo_pretendido||"";
+    $("candDepartment").value=c.departamento_pretendido||""; $("candStatus").value=c.status||"inscrito";
+    $("candScore").value=c.pontuacao??0; $("experience").value=c.experiencia_anos??0;
+    $("salaryExpectation").value=c.pretensao_salarial??""; $("education").value=c.formacao||"";
+    $("skills").value=c.habilidades||""; $("resumeUrl").value=c.curriculo_url||""; $("summary").value=c.resumo_profissional||"";
+    $("candidateModalLabel").textContent="Editar candidato #"+c.id;
+  }
+  function coletarCand() {
+    const num = (id)=>{ const v=$(id).value; return v===""?null:Number(v); };
+    return {
+      nome:$("candFullName").value.trim(), email:$("candEmail").value.trim(),
+      telefone:$("candPhone").value.trim()||null, cargo_pretendido:$("desiredRole").value.trim(),
+      departamento_pretendido:$("candDepartment").value||null, pontuacao:num("candScore")??0,
+      experiencia_anos:num("experience")??0, pretensao_salarial:num("salaryExpectation"),
+      formacao:$("education").value.trim()||null, habilidades:$("skills").value.trim()||null,
+      curriculo_url:$("resumeUrl").value.trim()||null, resumo_profissional:$("summary").value.trim()||null,
+    };
+  }
+
+  function limparFuncForm() {
+    $("empId").value=""; $("fullName").value=""; $("employeeEmail").value=""; $("role").value="";
+    $("department").value=""; $("salary").value=""; $("status").value="true"; $("formMessage").innerHTML="";
+    $("employeeModalLabel").textContent="Cadastrar funcionário";
+  }
+  function preencherFuncForm(f) {
+    $("empId").value=f.id; $("fullName").value=f.nome||""; $("employeeEmail").value=f.email||"";
+    $("role").value=f.cargo||""; $("department").value=f.departamento||""; $("salary").value=f.salario??"";
+    $("status").value=String(!!f.ativo); $("employeeModalLabel").textContent="Editar funcionário #"+f.id;
+  }
+  function coletarFunc() {
+    const s=$("salary").value;
+    return {
+      nome:$("fullName").value.trim(), email:$("employeeEmail").value.trim(),
+      cargo:$("role").value.trim(), departamento:$("department").value||null,
+      salario:s===""?0:Number(s), ativo:$("status").value==="true",
+    };
+  }
+
+  $("btnNovoCandidato").addEventListener("click", limparCandForm);
+  $("btnNovoFuncionario").addEventListener("click", limparFuncForm);
+
+  $("candidateForm").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const dados = coletarCand();
+    if (!dados.nome || !dados.email || !dados.cargo_pretendido) { $("candidateFormMessage").innerHTML = '<div class="alert alert-danger py-2 mb-0">Preencha nome, e-mail e cargo pretendido.</div>'; return; }
+    const id = $("candId").value;
+    try {
+      const salvo = await salvarCandidato(id, dados);
+      const faseEscolhida = $("candStatus").value;
+      if (salvo && salvo.id && faseEscolhida && salvo.status !== faseEscolhida && faseEscolhida!=="contratado") {
+        await mudarFaseCandidato(salvo.id, faseEscolhida);
+      }
+      modalCand().hide(); toast("Candidato salvo.", "ok");
+      await carregarCandidatos();
+    } catch(err) { $("candidateFormMessage").innerHTML = '<div class="alert alert-danger py-2 mb-0">'+esc(err.message||"Erro ao salvar.")+'</div>'; }
+  });
+
+  $("employeeForm").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const dados = coletarFunc();
+    if (!dados.nome || !dados.email || !dados.cargo) { $("formMessage").innerHTML = '<div class="alert alert-danger py-2 mb-0">Preencha nome, e-mail e cargo.</div>'; return; }
+    const id = $("empId").value;
+    try {
+      await salvarFuncionario(id, dados);
+      modalFunc().hide(); toast("Funcionário salvo.", "ok");
+      await carregarFuncionarios();
+    } catch(err) { $("formMessage").innerHTML = '<div class="alert alert-danger py-2 mb-0">'+esc(err.message||"Erro ao salvar.")+'</div>'; }
+  });
+
+  $("candidateRows").addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button[data-acao]"); if(!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.acao==="contratar") {
+      try { await contratarCandidato(id); toast("Candidato contratado — funcionário criado.","ok"); await carregarCandidatos(); await carregarFuncionarios(); }
+      catch(err){ toast(err.message||"Erro ao contratar.","err"); }
+    } else if (btn.dataset.acao==="editar-cand") {
+      const c = await obterCandidato(id); if(c){ preencherCandForm(c); modalCand().show(); }
+    } else if (btn.dataset.acao==="excluir-cand") {
+      if(!confirm("Excluir este candidato?")) return;
+      await removerCandidato(id); toast("Candidato excluído."); await carregarCandidatos();
+    }
+  });
+  $("candidateRows").addEventListener("change", async (e)=>{
+    const sel = e.target.closest("select[data-fase]"); if(!sel) return;
+    try {
+      await mudarFaseCandidato(sel.dataset.fase, sel.value);
+      toast(sel.value==="contratado" ? "Contratado — funcionário criado." : "Fase atualizada.", "ok");
+      await carregarCandidatos(); if (sel.value==="contratado") await carregarFuncionarios();
+    } catch(err){ toast(err.message||"Erro ao mudar a fase.","err"); await carregarCandidatos(); }
+  });
+
+  $("employeeRows").addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button[data-acao]"); if(!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.acao==="editar-func") {
+      const f = await obterFuncionario(id); if(f){ preencherFuncForm(f); modalFunc().show(); }
+    } else if (btn.dataset.acao==="excluir-func") {
+      if(!confirm("Excluir este funcionário?")) return;
+      await removerFuncionario(id); toast("Funcionário excluído."); await carregarFuncionarios();
+    }
+  });
+
+  let tBusca;
+  const debounce = (fn)=>{ clearTimeout(tBusca); tBusca=setTimeout(fn,300); };
+  $("candidateSearchInput").addEventListener("input", ()=>debounce(carregarCandidatos));
+  $("candidateFilter").addEventListener("change", carregarCandidatos);
+  $("searchInput").addEventListener("input", ()=>debounce(carregarFuncionarios));
+
+  (async function init(){
+    await carregarCandidatos();
+    await carregarFuncionarios();
+  })();
+  </script>
+</body>
 </html>
