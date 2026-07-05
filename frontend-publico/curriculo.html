@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enviar currículo · Portal de Carreiras</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root { --brand:#0e5c4a; --brand-dark:#0b4c3d; --ink:#1b1e24; --muted:#6b7280; }
+    body { background:#f7f8f7; color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+    .navbar-brand { font-weight:700; letter-spacing:-.02em; }
+    .text-brand { color:var(--brand); }
+    .btn-brand { background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; }
+    .btn-brand:hover { background:var(--brand-dark); border-color:var(--brand-dark); color:#fff; }
+    .form-card { border:none; border-radius:1rem; box-shadow:0 10px 30px rgba(0,0,0,.06); }
+    .form-label { font-size:.8rem; font-weight:600; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
+    .section-title { font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+    footer { color:var(--muted); font-size:.85rem; padding:2.5rem 0; }
+    .success-icon { width:64px; height:64px; border-radius:50%; background:#e2f1e8; color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto; }
+    .dropzone { border:2px dashed #cdd5d1; border-radius:.75rem; padding:1.25rem; text-align:center; color:var(--muted); background:#fbfdfc; }
+    .dropzone .fname { color:var(--brand); font-weight:600; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg bg-white border-bottom">
+    <div class="container">
+      <a class="navbar-brand text-brand" href="index.html">Portal de Carreiras</a>
+      <a class="btn btn-outline-secondary btn-sm" href="index.html">Voltar</a>
+    </div>
+  </nav>
+
+  <main class="container py-5" style="max-width:820px;">
+    <div class="text-center mb-4">
+      <h1 class="h3 fw-bold">Envie seu currículo</h1>
+      <p class="text-muted">Preencha os campos abaixo. Os itens com * são obrigatórios.</p>
+    </div>
+
+    <div id="successBox" class="card form-card d-none">
+      <div class="card-body text-center py-5">
+        <div class="success-icon mb-3">&#10003;</div>
+        <h2 class="h4 fw-bold mb-2">Currículo enviado!</h2>
+        <p class="text-muted mb-4">Recebemos sua inscrição. Nossa equipe vai analisar seu perfil. Boa sorte!</p>
+        <button id="btnNovo" class="btn btn-brand">Enviar outro currículo</button>
+      </div>
+    </div>
+
+    <div id="formCard" class="card form-card">
+      <div class="card-body p-4 p-md-5">
+        <form id="curriculoForm">
+          <p class="section-title mb-3">Dados pessoais</p>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6"><label for="nome" class="form-label">Nome completo *</label><input type="text" class="form-control" id="nome" required /></div>
+            <div class="col-12 col-md-6"><label for="email" class="form-label">E-mail *</label><input type="email" class="form-control" id="email" required /></div>
+            <div class="col-12 col-md-6"><label for="telefone" class="form-label">Telefone</label><input type="text" class="form-control" id="telefone" placeholder="(11) 90000-0000" /></div>
+          </div>
+
+          <p class="section-title mb-3">Vaga de interesse</p>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6"><label for="cargo_pretendido" class="form-label">Cargo pretendido *</label><input type="text" class="form-control" id="cargo_pretendido" required /></div>
+            <div class="col-12 col-md-6"><label for="departamento_pretendido" class="form-label">Departamento</label>
+              <select class="form-select" id="departamento_pretendido">
+                <option value="">Selecione&#8230;</option>
+                <option>RH</option><option>TI</option><option>Financeiro</option>
+                <option>Marketing</option><option>Opera&#231;&#245;es</option>
+              </select></div>
+            <div class="col-6 col-md-4"><label for="experiencia_anos" class="form-label">Experiência (anos)</label><input type="number" class="form-control" id="experiencia_anos" min="0" value="0" /></div>
+            <div class="col-6 col-md-4"><label for="pretensao_salarial" class="form-label">Pretensão (R$)</label><input type="number" class="form-control" id="pretensao_salarial" min="0" step="0.01" /></div>
+          </div>
+
+          <p class="section-title mb-3">Currículo</p>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6"><label for="formacao" class="form-label">Formação</label><input type="text" class="form-control" id="formacao" placeholder="Ex.: Sistemas de Informação" /></div>
+            <div class="col-12"><label for="habilidades" class="form-label">Habilidades (separe por vírgula)</label><input type="text" class="form-control" id="habilidades" placeholder="Python, SQL, Comunica&#231;&#227;o" /></div>
+
+            <div class="col-12">
+              <label class="form-label">Arquivo do currículo (PDF, até 5 MB)</label>
+              <label for="curriculo_arquivo" class="dropzone d-block" style="cursor:pointer;">
+                <div id="dropText">&#128206; Toque para selecionar o PDF do seu currículo</div>
+                <div id="fileName" class="fname mt-1"></div>
+              </label>
+              <input type="file" id="curriculo_arquivo" accept="application/pdf,.pdf" class="d-none" />
+            </div>
+
+            <div class="col-12"><label for="curriculo_url" class="form-label">Ou link do currículo (opcional)</label><input type="url" class="form-control" id="curriculo_url" placeholder="https://... (LinkedIn, Drive, etc.)" /></div>
+            <div class="col-12"><label for="resumo_profissional" class="form-label">Resumo profissional</label><textarea class="form-control" id="resumo_profissional" rows="4" placeholder="Conte um pouco sobre sua experiência e objetivos."></textarea></div>
+          </div>
+
+          <div id="formMessage" class="mb-3"></div>
+
+          <div class="d-grid d-md-flex gap-2">
+            <button type="submit" id="btnEnviar" class="btn btn-brand btn-lg">Enviar currículo</button>
+            <a href="index.html" class="btn btn-light btn-lg">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer><div class="container text-center">&#169; Portal de Carreiras</div></footer>
+
+  <script>
+  // ===================================================================
+  // URL da API (porta 8000 do Codespace) — já preenchida
+  // ===================================================================
+  const API_BASE = window.location.origin;
+  const TIMEOUT = 15000;
+  const MAX_MB = 5;
+
+  const $ = (id) => document.getElementById(id);
+
+  $("curriculo_arquivo").addEventListener("change", () => {
+    const f = $("curriculo_arquivo").files[0];
+    $("fileName").textContent = f ? f.name : "";
+    $("dropText").textContent = f ? "\u{1F4CE} Arquivo selecionado:" : "\u{1F4CE} Toque para selecionar o PDF do seu curr\u00EDculo";
+  });
+
+  function coletar() {
+    const num = (id) => { const v = $(id).value; return v === "" ? null : Number(v); };
+    const txt = (id) => { const v = $(id).value.trim(); return v === "" ? null : v; };
+    return {
+      nome: $("nome").value.trim(),
+      email: $("email").value.trim(),
+      telefone: txt("telefone"),
+      cargo_pretendido: $("cargo_pretendido").value.trim(),
+      departamento_pretendido: $("departamento_pretendido").value || null,
+      experiencia_anos: num("experiencia_anos") ?? 0,
+      pretensao_salarial: num("pretensao_salarial"),
+      formacao: txt("formacao"),
+      habilidades: txt("habilidades"),
+      curriculo_url: txt("curriculo_url"),
+      resumo_profissional: txt("resumo_profissional"),
+    };
+  }
+
+  function comTimeout(ms) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    return { signal: ctrl.signal, done: () => clearTimeout(t) };
+  }
+
+  async function criarCandidato(dados) {
+    const c = comTimeout(TIMEOUT);
+    try {
+      const resp = await fetch(API_BASE + "/candidatos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados),
+        signal: c.signal,
+      });
+      c.done();
+      if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail || ("Erro HTTP " + resp.status)); }
+      return await resp.json();
+    } catch (e) { c.done(); throw e; }
+  }
+
+  async function enviarArquivo(candidatoId, arquivo) {
+    const c = comTimeout(TIMEOUT);
+    try {
+      const fd = new FormData();
+      fd.append("arquivo", arquivo);
+      const resp = await fetch(API_BASE + "/candidatos/" + candidatoId + "/curriculo", {
+        method: "POST", body: fd, signal: c.signal,
+      });
+      c.done();
+      if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail || ("Erro HTTP " + resp.status)); }
+      return await resp.json();
+    } catch (e) { c.done(); throw e; }
+  }
+
+  const msg = (html) => $("formMessage").innerHTML = html;
+
+  $("curriculoForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const dados = coletar();
+    if (!dados.nome || !dados.email || !dados.cargo_pretendido) {
+      msg('<div class="alert alert-danger py-2 mb-0">Preencha nome, e-mail e cargo pretendido.</div>');
+      return;
+    }
+
+    const arquivo = $("curriculo_arquivo").files[0] || null;
+    if (arquivo) {
+      const ehPdf = arquivo.type === "application/pdf" || arquivo.name.toLowerCase().endsWith(".pdf");
+      if (!ehPdf) { msg('<div class="alert alert-danger py-2 mb-0">O arquivo precisa ser um PDF.</div>'); return; }
+      if (arquivo.size > MAX_MB * 1024 * 1024) { msg('<div class="alert alert-danger py-2 mb-0">O PDF excede ' + MAX_MB + ' MB.</div>'); return; }
+    }
+
+    const btn = $("btnEnviar");
+    btn.disabled = true; btn.textContent = "Enviando\u2026"; msg("");
+
+    try {
+      const candidato = await criarCandidato(dados);
+      if (arquivo && candidato && candidato.id) {
+        try {
+          await enviarArquivo(candidato.id, arquivo);
+        } catch (upErr) {
+          $("formCard").classList.add("d-none");
+          $("successBox").classList.remove("d-none");
+          $("successBox").querySelector("p").textContent =
+            "Sua inscri\u00E7\u00E3o foi registrada, mas n\u00E3o conseguimos anexar o PDF. Voc\u00EA pode reenviar mais tarde ou usar o campo de link.";
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+      }
+      $("formCard").classList.add("d-none");
+      $("successBox").classList.remove("d-none");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      const texto = String(err.message || "");
+      if (texto.toLowerCase().includes("mail")) {
+        msg('<div class="alert alert-warning py-2 mb-0">Este e-mail j\u00E1 foi cadastrado antes. Para atualizar seus dados, fale com a empresa.</div>');
+      } else {
+        msg('<div class="alert alert-danger py-2 mb-0">N\u00E3o foi poss\u00EDvel enviar agora. Verifique sua conex\u00E3o e tente novamente.</div>');
+      }
+    } finally {
+      btn.disabled = false; btn.textContent = "Enviar curr\u00EDculo";
+    }
+  });
+
+  $("btnNovo").addEventListener("click", () => {
+    $("curriculoForm").reset();
+    $("experiencia_anos").value = "0";
+    $("fileName").textContent = "";
+    $("dropText").textContent = "\u{1F4CE} Toque para selecionar o PDF do seu curr\u00EDculo";
+    $("successBox").classList.add("d-none");
+    $("formCard").classList.remove("d-none");
+  });
+  </script>
+</body>
+</html>

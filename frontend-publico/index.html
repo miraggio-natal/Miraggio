@@ -3,227 +3,150 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Enviar currículo · Portal de Carreiras</title>
+  <title>Miraggio · Portal de Carreiras</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
-    :root { --brand:#0e5c4a; --brand-dark:#0b4c3d; --ink:#1b1e24; --muted:#6b7280; }
-    body { background:#f7f8f7; color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
-    .navbar-brand { font-weight:700; letter-spacing:-.02em; }
-    .text-brand { color:var(--brand); }
-    .btn-brand { background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; }
-    .btn-brand:hover { background:var(--brand-dark); border-color:var(--brand-dark); color:#fff; }
-    .form-card { border:none; border-radius:1rem; box-shadow:0 10px 30px rgba(0,0,0,.06); }
-    .form-label { font-size:.8rem; font-weight:600; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
-    .section-title { font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
-    footer { color:var(--muted); font-size:.85rem; padding:2.5rem 0; }
-    .success-icon { width:64px; height:64px; border-radius:50%; background:#e2f1e8; color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto; }
-    .dropzone { border:2px dashed #cdd5d1; border-radius:.75rem; padding:1.25rem; text-align:center; color:var(--muted); background:#fbfdfc; }
-    .dropzone .fname { color:var(--brand); font-weight:600; }
+    :root {
+      --brand:#5a3a26;
+      --brand-deep:#3f281a;
+      --brand-soft:#efe7dd;
+      --cream:#f6f1e9;
+      --paper:#faf7f2;
+      --ink:#2a2320;
+      --muted:#7c6f63;
+      --line:#e7ddd0;
+    }
+    * { scroll-behavior:smooth; }
+    body { background:var(--paper); color:var(--ink); font-family:Georgia,"Times New Roman",serif; }
+    .sans { font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+
+    .nav-top { background:rgba(250,247,242,.9); backdrop-filter:blur(6px); border-bottom:1px solid var(--line); }
+    .nav-top .brand { font-family:Georgia,serif; font-weight:700; letter-spacing:.14em; color:var(--brand); text-transform:uppercase; font-size:1.05rem; }
+    .btn-brand { background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; font-family:system-ui,sans-serif; letter-spacing:.01em; }
+    .btn-brand:hover { background:var(--brand-deep); border-color:var(--brand-deep); color:#fff; }
+
+    .hero { background:radial-gradient(120% 130% at 50% 0%, #fffdfa 0%, var(--cream) 55%, #efe6da 100%); border-bottom:1px solid var(--line); }
+    .hero .content { padding:4.5rem 0 5rem; text-align:center; }
+    .hero .logo { max-width:340px; width:72%; height:auto; margin:0 auto 1.75rem; display:block; }
+    .hero .logo-fallback { font-family:Georgia,serif; font-weight:700; letter-spacing:.2em; font-size:2.4rem; color:var(--brand); text-transform:uppercase; margin-bottom:1rem; }
+    .hero .eyebrow { font-family:system-ui,sans-serif; text-transform:uppercase; letter-spacing:.22em; font-size:.72rem; font-weight:700; color:#9c7a54; margin-bottom:1.1rem; }
+    .hero h1 { font-weight:700; letter-spacing:-.01em; line-height:1.1; font-size:clamp(1.9rem,4.4vw,3rem); color:var(--brand-deep); }
+    .hero p.lead { color:var(--muted); max-width:540px; margin:1rem auto 0; font-size:1.08rem; font-family:system-ui,sans-serif; }
+    .hero .cta-row { margin-top:2rem; display:flex; gap:.75rem; flex-wrap:wrap; justify-content:center; }
+
+    .section-eyebrow { font-family:system-ui,sans-serif; text-transform:uppercase; letter-spacing:.16em; font-size:.72rem; font-weight:700; color:#9c7a54; }
+    .section-title { font-weight:700; letter-spacing:-.01em; color:var(--brand-deep); }
+    .lead-muted { color:var(--muted); font-family:system-ui,sans-serif; }
+
+    .step { position:relative; background:#fff; border:1px solid var(--line); border-radius:.9rem; padding:1.75rem 1.5rem; height:100%; transition:transform .18s ease, box-shadow .18s ease; }
+    .step:hover { transform:translateY(-4px); box-shadow:0 14px 32px rgba(90,58,38,.10); }
+    .step .num { font-family:Georgia,serif; font-weight:700; font-size:1.05rem; color:var(--brand); background:var(--brand-soft); width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:1rem; }
+    .step h3 { font-family:system-ui,sans-serif; font-size:1.02rem; font-weight:700; margin-bottom:.4rem; color:var(--ink); }
+    .step p { color:var(--muted); font-size:.92rem; margin:0; font-family:system-ui,sans-serif; }
+    .step-line { display:none; }
+    @media (min-width:768px){ .step-line { display:block; position:absolute; top:40px; right:-13px; width:26px; height:2px; background:var(--line); z-index:1; } }
+
+    .value { padding:1.5rem; text-align:center; }
+    .value .ic { width:48px; height:48px; border-radius:12px; background:var(--brand-soft); color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:1.4rem; margin:0 auto .9rem; }
+    .value h4 { font-family:system-ui,sans-serif; font-size:1rem; font-weight:700; }
+    .value p { color:var(--muted); font-size:.92rem; font-family:system-ui,sans-serif; }
+
+    .cta-band { background:var(--brand-deep); color:#fff; border-radius:1.1rem; padding:3rem 2rem; text-align:center; }
+    .cta-band h2 { font-weight:700; }
+    .cta-band p { color:rgba(255,255,255,.8); max-width:520px; margin:0 auto 1.5rem; font-family:system-ui,sans-serif; }
+    .btn-cream { background:var(--cream); color:var(--brand-deep); font-weight:700; border:none; font-family:system-ui,sans-serif; }
+    .btn-cream:hover { background:#fff; color:var(--brand-deep); }
+
+    footer.site { color:var(--muted); font-size:.85rem; padding:2.5rem 0; text-align:center; font-family:system-ui,sans-serif; }
+    footer.site .mk { font-family:Georgia,serif; letter-spacing:.14em; text-transform:uppercase; color:var(--brand); }
+
+    @media (prefers-reduced-motion:reduce){ .step{transition:none;} *{scroll-behavior:auto;} }
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg bg-white border-bottom">
-    <div class="container">
-      <a class="navbar-brand text-brand" href="index.html">Portal de Carreiras</a>
-      <a class="btn btn-outline-secondary btn-sm" href="index.html">Voltar</a>
+  <nav class="nav-top sticky-top">
+    <div class="container d-flex align-items-center justify-content-between py-3">
+      <span class="brand">Miraggio</span>
+      <a href="curriculo.html" class="btn btn-brand btn-sm">Enviar currículo</a>
     </div>
   </nav>
 
-  <main class="container py-5" style="max-width:820px;">
-    <div class="text-center mb-4">
-      <h1 class="h3 fw-bold">Envie seu currículo</h1>
-      <p class="text-muted">Preencha os campos abaixo. Os itens com * são obrigatórios.</p>
-    </div>
+  <header class="hero">
+    <div class="container content">
+      <img src="logo.png" alt="Miraggio" class="logo"
+           onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='block';" />
+      <div id="logoFallback" class="logo-fallback" style="display:none;">Miraggio</div>
 
-    <div id="successBox" class="card form-card d-none">
-      <div class="card-body text-center py-5">
-        <div class="success-icon mb-3">&#10003;</div>
-        <h2 class="h4 fw-bold mb-2">Currículo enviado!</h2>
-        <p class="text-muted mb-4">Recebemos sua inscrição. Nossa equipe vai analisar seu perfil. Boa sorte!</p>
-        <button id="btnNovo" class="btn btn-brand">Enviar outro currículo</button>
+      <div class="eyebrow">Estamos contratando</div>
+      <h1>Venha construir sua carreira</h1>
+      <p class="lead">Buscamos pessoas que querem crescer, aprender e fazer parte de um time que valoriza cada trajetória. Seu próximo passo começa aqui.</p>
+      <div class="cta-row">
+        <a href="curriculo.html" class="btn btn-brand btn-lg px-4">Enviar meu currículo</a>
+        <a href="#processo" class="btn btn-outline-dark btn-lg px-4">Como funciona</a>
       </div>
     </div>
+  </header>
 
-    <div id="formCard" class="card form-card">
-      <div class="card-body p-4 p-md-5">
-        <form id="curriculoForm">
-          <p class="section-title mb-3">Dados pessoais</p>
-          <div class="row g-3 mb-4">
-            <div class="col-12 col-md-6"><label for="nome" class="form-label">Nome completo *</label><input type="text" class="form-control" id="nome" required /></div>
-            <div class="col-12 col-md-6"><label for="email" class="form-label">E-mail *</label><input type="email" class="form-control" id="email" required /></div>
-            <div class="col-12 col-md-6"><label for="telefone" class="form-label">Telefone</label><input type="text" class="form-control" id="telefone" placeholder="(11) 90000-0000" /></div>
-          </div>
-
-          <p class="section-title mb-3">Vaga de interesse</p>
-          <div class="row g-3 mb-4">
-            <div class="col-12 col-md-6"><label for="cargo_pretendido" class="form-label">Cargo pretendido *</label><input type="text" class="form-control" id="cargo_pretendido" required /></div>
-            <div class="col-12 col-md-6"><label for="departamento_pretendido" class="form-label">Departamento</label>
-              <select class="form-select" id="departamento_pretendido">
-                <option value="">Selecione&#8230;</option>
-                <option>RH</option><option>TI</option><option>Financeiro</option>
-                <option>Marketing</option><option>Opera&#231;&#245;es</option>
-              </select></div>
-            <div class="col-6 col-md-4"><label for="experiencia_anos" class="form-label">Experiência (anos)</label><input type="number" class="form-control" id="experiencia_anos" min="0" value="0" /></div>
-            <div class="col-6 col-md-4"><label for="pretensao_salarial" class="form-label">Pretensão (R$)</label><input type="number" class="form-control" id="pretensao_salarial" min="0" step="0.01" /></div>
-          </div>
-
-          <p class="section-title mb-3">Currículo</p>
-          <div class="row g-3 mb-4">
-            <div class="col-12 col-md-6"><label for="formacao" class="form-label">Formação</label><input type="text" class="form-control" id="formacao" placeholder="Ex.: Sistemas de Informação" /></div>
-            <div class="col-12"><label for="habilidades" class="form-label">Habilidades (separe por vírgula)</label><input type="text" class="form-control" id="habilidades" placeholder="Python, SQL, Comunica&#231;&#227;o" /></div>
-
-            <div class="col-12">
-              <label class="form-label">Arquivo do currículo (PDF, até 5 MB)</label>
-              <label for="curriculo_arquivo" class="dropzone d-block" style="cursor:pointer;">
-                <div id="dropText">&#128206; Toque para selecionar o PDF do seu currículo</div>
-                <div id="fileName" class="fname mt-1"></div>
-              </label>
-              <input type="file" id="curriculo_arquivo" accept="application/pdf,.pdf" class="d-none" />
-            </div>
-
-            <div class="col-12"><label for="curriculo_url" class="form-label">Ou link do currículo (opcional)</label><input type="url" class="form-control" id="curriculo_url" placeholder="https://... (LinkedIn, Drive, etc.)" /></div>
-            <div class="col-12"><label for="resumo_profissional" class="form-label">Resumo profissional</label><textarea class="form-control" id="resumo_profissional" rows="4" placeholder="Conte um pouco sobre sua experiência e objetivos."></textarea></div>
-          </div>
-
-          <div id="formMessage" class="mb-3"></div>
-
-          <div class="d-grid d-md-flex gap-2">
-            <button type="submit" id="btnEnviar" class="btn btn-brand btn-lg">Enviar currículo</button>
-            <a href="index.html" class="btn btn-light btn-lg">Cancelar</a>
-          </div>
-        </form>
+  <section id="processo" class="py-5">
+    <div class="container">
+      <div class="text-center mb-5">
+        <div class="section-eyebrow mb-2">O processo</div>
+        <h2 class="section-title">Do currículo à contratação</h2>
+        <p class="lead-muted">Quatro etapas simples e transparentes. Você acompanha cada uma delas.</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-12 col-md-6 col-lg-3">
+          <div class="step"><div class="num">1</div><span class="step-line"></span>
+            <h3>Inscrição</h3><p>Envie seu currículo pelo portal em poucos minutos, anexando um PDF ou um link.</p></div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+          <div class="step"><div class="num">2</div><span class="step-line"></span>
+            <h3>Triagem</h3><p>Nossa equipe analisa seu perfil com atenção, valorizando sua experiência.</p></div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+          <div class="step"><div class="num">3</div><span class="step-line"></span>
+            <h3>Entrevista</h3><p>Uma conversa para nos conhecermos melhor e entender onde você brilha.</p></div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+          <div class="step"><div class="num">4</div>
+            <h3>Contratação</h3><p>Deu match? Damos as boas-vindas e você começa uma nova fase com a gente.</p></div>
+        </div>
       </div>
     </div>
-  </main>
+  </section>
 
-  <footer><div class="container text-center">&#169; Portal de Carreiras</div></footer>
+  <section class="py-4">
+    <div class="container">
+      <div class="row g-3 justify-content-center">
+        <div class="col-12 col-md-4"><div class="value">
+          <div class="ic">&#127794;</div><h4>Espaço para crescer</h4>
+          <p>Trilhas de desenvolvimento e oportunidades reais de evolução na carreira.</p></div></div>
+        <div class="col-12 col-md-4"><div class="value">
+          <div class="ic">&#129309;</div><h4>Time que apoia</h4>
+          <p>Um ambiente colaborativo onde cada pessoa é ouvida e respeitada.</p></div></div>
+        <div class="col-12 col-md-4"><div class="value">
+          <div class="ic">&#9878;&#65039;</div><h4>Processo justo</h4>
+          <p>Transparência do começo ao fim, com retorno em cada etapa da seleção.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5">
+    <div class="container">
+      <div class="cta-band">
+        <h2 class="mb-2">Pronto para dar o primeiro passo?</h2>
+        <p>Leva poucos minutos. Preencha seus dados, anexe seu currículo e deixe o resto com a gente.</p>
+        <a href="curriculo.html" class="btn btn-cream btn-lg px-4">Enviar meu currículo</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site">
+    <div class="container">© <span id="ano"></span> <span class="mk">Miraggio</span> · Portal de Carreiras</div>
+  </footer>
 
   <script>
-  // ===================================================================
-  // URL da API (porta 8000 do Codespace) — já preenchida
-  // ===================================================================
-  const API_BASE = "https://fluffy-dollop-qvvv9qj554gxfx7vg-8000.app.github.dev";
-  const TIMEOUT = 15000;
-  const MAX_MB = 5;
-
-  const $ = (id) => document.getElementById(id);
-
-  $("curriculo_arquivo").addEventListener("change", () => {
-    const f = $("curriculo_arquivo").files[0];
-    $("fileName").textContent = f ? f.name : "";
-    $("dropText").textContent = f ? "\u{1F4CE} Arquivo selecionado:" : "\u{1F4CE} Toque para selecionar o PDF do seu curr\u00EDculo";
-  });
-
-  function coletar() {
-    const num = (id) => { const v = $(id).value; return v === "" ? null : Number(v); };
-    const txt = (id) => { const v = $(id).value.trim(); return v === "" ? null : v; };
-    return {
-      nome: $("nome").value.trim(),
-      email: $("email").value.trim(),
-      telefone: txt("telefone"),
-      cargo_pretendido: $("cargo_pretendido").value.trim(),
-      departamento_pretendido: $("departamento_pretendido").value || null,
-      experiencia_anos: num("experiencia_anos") ?? 0,
-      pretensao_salarial: num("pretensao_salarial"),
-      formacao: txt("formacao"),
-      habilidades: txt("habilidades"),
-      curriculo_url: txt("curriculo_url"),
-      resumo_profissional: txt("resumo_profissional"),
-    };
-  }
-
-  function comTimeout(ms) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), ms);
-    return { signal: ctrl.signal, done: () => clearTimeout(t) };
-  }
-
-  async function criarCandidato(dados) {
-    const c = comTimeout(TIMEOUT);
-    try {
-      const resp = await fetch(API_BASE + "/candidatos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dados),
-        signal: c.signal,
-      });
-      c.done();
-      if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail || ("Erro HTTP " + resp.status)); }
-      return await resp.json();
-    } catch (e) { c.done(); throw e; }
-  }
-
-  async function enviarArquivo(candidatoId, arquivo) {
-    const c = comTimeout(TIMEOUT);
-    try {
-      const fd = new FormData();
-      fd.append("arquivo", arquivo);
-      const resp = await fetch(API_BASE + "/candidatos/" + candidatoId + "/curriculo", {
-        method: "POST", body: fd, signal: c.signal,
-      });
-      c.done();
-      if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail || ("Erro HTTP " + resp.status)); }
-      return await resp.json();
-    } catch (e) { c.done(); throw e; }
-  }
-
-  const msg = (html) => $("formMessage").innerHTML = html;
-
-  $("curriculoForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const dados = coletar();
-    if (!dados.nome || !dados.email || !dados.cargo_pretendido) {
-      msg('<div class="alert alert-danger py-2 mb-0">Preencha nome, e-mail e cargo pretendido.</div>');
-      return;
-    }
-
-    const arquivo = $("curriculo_arquivo").files[0] || null;
-    if (arquivo) {
-      const ehPdf = arquivo.type === "application/pdf" || arquivo.name.toLowerCase().endsWith(".pdf");
-      if (!ehPdf) { msg('<div class="alert alert-danger py-2 mb-0">O arquivo precisa ser um PDF.</div>'); return; }
-      if (arquivo.size > MAX_MB * 1024 * 1024) { msg('<div class="alert alert-danger py-2 mb-0">O PDF excede ' + MAX_MB + ' MB.</div>'); return; }
-    }
-
-    const btn = $("btnEnviar");
-    btn.disabled = true; btn.textContent = "Enviando\u2026"; msg("");
-
-    try {
-      const candidato = await criarCandidato(dados);
-      if (arquivo && candidato && candidato.id) {
-        try {
-          await enviarArquivo(candidato.id, arquivo);
-        } catch (upErr) {
-          $("formCard").classList.add("d-none");
-          $("successBox").classList.remove("d-none");
-          $("successBox").querySelector("p").textContent =
-            "Sua inscri\u00E7\u00E3o foi registrada, mas n\u00E3o conseguimos anexar o PDF. Voc\u00EA pode reenviar mais tarde ou usar o campo de link.";
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          return;
-        }
-      }
-      $("formCard").classList.add("d-none");
-      $("successBox").classList.remove("d-none");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err) {
-      const texto = String(err.message || "");
-      if (texto.toLowerCase().includes("mail")) {
-        msg('<div class="alert alert-warning py-2 mb-0">Este e-mail j\u00E1 foi cadastrado antes. Para atualizar seus dados, fale com a empresa.</div>');
-      } else {
-        msg('<div class="alert alert-danger py-2 mb-0">N\u00E3o foi poss\u00EDvel enviar agora. Verifique sua conex\u00E3o e tente novamente.</div>');
-      }
-    } finally {
-      btn.disabled = false; btn.textContent = "Enviar curr\u00EDculo";
-    }
-  });
-
-  $("btnNovo").addEventListener("click", () => {
-    $("curriculoForm").reset();
-    $("experiencia_anos").value = "0";
-    $("fileName").textContent = "";
-    $("dropText").textContent = "\u{1F4CE} Toque para selecionar o PDF do seu curr\u00EDculo";
-    $("successBox").classList.add("d-none");
-    $("formCard").classList.remove("d-none");
-  });
+    document.getElementById("ano").textContent = new Date().getFullYear();
   </script>
 </body>
 </html>
